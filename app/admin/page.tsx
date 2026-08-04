@@ -282,6 +282,89 @@ export default function AdminPage() {
     else refresh();
   }
 
+  async function deleteBeat(beat: Beat) {
+    const confirmed = window.confirm(
+      `Delete "${beat.title}" permanently? This removes the beat from the storefront, database, and Supabase Storage.`
+    );
+
+    if (!confirmed) return;
+
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const { error: deleteError } = await supabase
+        .from("beats")
+        .delete()
+        .eq("id", beat.id);
+
+      if (deleteError) throw deleteError;
+
+      const globalCoverPath =
+        siteSettings.settings?.media?.globalCoverPath || "";
+
+      const storageDeletes: PromiseLike<unknown>[] = [];
+
+      if (beat.preview_path) {
+        storageDeletes.push(
+          supabase.storage
+            .from("beat-previews")
+            .remove([beat.preview_path])
+        );
+      }
+
+      const paidFiles = [beat.mp3_path, beat.wav_path].filter(
+        (path): path is string => Boolean(path)
+      );
+
+      if (paidFiles.length > 0) {
+        storageDeletes.push(
+          supabase.storage
+            .from("beat-files")
+            .remove(paidFiles)
+        );
+      }
+
+      if (
+        beat.cover_path &&
+        beat.cover_path !== globalCoverPath
+      ) {
+        storageDeletes.push(
+          supabase.storage
+            .from("beat-covers")
+            .remove([beat.cover_path])
+        );
+      }
+
+      const cleanupResults = await Promise.all(storageDeletes);
+      const cleanupFailed = cleanupResults.some(
+        (result) =>
+          typeof result === "object" &&
+          result !== null &&
+          "error" in result &&
+          Boolean((result as { error?: unknown }).error)
+      );
+
+      if (editingBeat?.id === beat.id) {
+        resetForm();
+      }
+
+      setMessage(
+        cleanupFailed
+          ? "Beat deleted. One or more old storage files could not be removed."
+          : "Beat deleted permanently."
+      );
+
+      await refresh();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Delete failed."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     setAuthenticated(false);
@@ -645,9 +728,26 @@ export default function AdminPage() {
                     <span>{beat.producer} · ${Number(beat.price).toFixed(2)}</span>
                   </div>
                   <div className="admin-item-actions">
-                    <button className="ghost-btn" onClick={() => beginEdit(beat)}>Edit</button>
-                    <button className="status-btn" onClick={() => toggleStatus(beat)}>
+                    <button
+                      className="ghost-btn"
+                      onClick={() => beginEdit(beat)}
+                      disabled={busy}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="status-btn"
+                      onClick={() => toggleStatus(beat)}
+                      disabled={busy}
+                    >
                       {beat.status}
+                    </button>
+                    <button
+                      className="danger-btn"
+                      onClick={() => deleteBeat(beat)}
+                      disabled={busy}
+                    >
+                      Delete
                     </button>
                   </div>
                 </article>
