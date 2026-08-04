@@ -23,6 +23,10 @@ export type SiteSettings = {
     media?: {
       globalCoverPath?: string;
     };
+    branding?: {
+      headerLogoText?: string;
+      footerLogoText?: string;
+    };
     about?: {
       visible?: boolean;
       eyebrow?: string;
