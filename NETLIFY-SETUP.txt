@@ -1,0 +1,24 @@
+YE2K NETLIFY DEPLOYMENT
+
+1. Netlify → Add new project → Import an existing project → GitHub.
+2. Select the existing YE2K repository.
+3. Build command: npm run build
+4. Publish directory: .next
+5. Add the same environment variables currently used in Vercel:
+   NEXT_PUBLIC_SUPABASE_URL
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+   SUPABASE_SECRET_KEY
+   STRIPE_SECRET_KEY
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+   STRIPE_WEBHOOK_SECRET
+   NEXT_PUBLIC_CURRENCY=USD
+   NEXT_PUBLIC_SITE_URL=https://YOUR-NETLIFY-DOMAIN
+6. After the Netlify domain is known, update NEXT_PUBLIC_SITE_URL.
+7. Stripe Dashboard → Developers → Webhooks:
+   add or update endpoint to:
+   https://YOUR-NETLIFY-DOMAIN/api/stripe/webhook
+   Events:
+   checkout.session.completed
+   checkout.session.expired
+   payment_intent.payment_failed
+8. Use that endpoint's signing secret as STRIPE_WEBHOOK_SECRET in Netlify.

@@ -1,0 +1,21 @@
+YE2K full Stripe project
+
+Upload the contents of this folder to the root of the GitHub repository.
+
+Required Vercel variables:
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SECRET_KEY
+STRIPE_SECRET_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+STRIPE_WEBHOOK_SECRET
+NEXT_PUBLIC_SITE_URL=https://ye2k.vercel.app
+NEXT_PUBLIC_CURRENCY=USD
+
+Stripe webhook:
+https://ye2k.vercel.app/api/stripe/webhook
+
+Events:
+checkout.session.completed
+checkout.session.expired
+payment_intent.payment_failed
