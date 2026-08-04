@@ -29,6 +29,18 @@ export type SiteSettings = {
       headline?: string;
       description?: string;
     };
+    announcement?: {
+      enabled?: boolean;
+      text?: string;
+      link?: string;
+      openInNewTab?: boolean;
+    };
+    creative?: {
+      workspaceEnabled?: boolean;
+      lyricsEnabled?: boolean;
+      autoSaveEnabled?: boolean;
+      txtDownloadEnabled?: boolean;
+    };
     [key: string]: unknown;
   };
   updated_at: string;
