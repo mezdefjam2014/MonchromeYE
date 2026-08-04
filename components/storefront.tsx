@@ -318,6 +318,9 @@ export default function Storefront() {
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
   const [legalModal, setLegalModal] = useState<LegalModal>(null);
+  const [workspaceBeat, setWorkspaceBeat] = useState<Beat | null>(null);
+  const [workspaceNotes, setWorkspaceNotes] = useState("");
+  const [workspaceSaved, setWorkspaceSaved] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
