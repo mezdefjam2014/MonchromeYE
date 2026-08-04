@@ -31,6 +31,18 @@ const defaultSettings: SiteSettings = {
       headline: "Built for artists who care how the record feels.",
       description:
         "Every beat comes with clear pricing and immediate access to every included file after payment."
+    },
+    announcement: {
+      enabled: false,
+      text: "NEW DROP — AVAILABLE NOW",
+      link: "",
+      openInNewTab: false
+    },
+    creative: {
+      workspaceEnabled: false,
+      lyricsEnabled: true,
+      autoSaveEnabled: true,
+      txtDownloadEnabled: true
     }
   },
   updated_at: ""
@@ -403,6 +415,12 @@ export default function Storefront() {
     publicUrl("beat-covers", globalCoverPath || beat.cover_path);
 
   const aboutVisible = settings.settings?.about?.visible !== false;
+  const announcement = settings.settings?.announcement;
+  const creativeSettings = settings.settings?.creative;
+  const workspaceEnabled = creativeSettings?.workspaceEnabled === true;
+  const lyricsEnabled = creativeSettings?.lyricsEnabled !== false;
+  const autoSaveEnabled = creativeSettings?.autoSaveEnabled !== false;
+  const txtDownloadEnabled = creativeSettings?.txtDownloadEnabled !== false;
 
   function connectAudio(
     audio: HTMLAudioElement,
@@ -497,6 +515,84 @@ export default function Storefront() {
   }
 
 
+  useEffect(() => {
+    if (!workspaceBeat) return;
+
+    setWorkspaceNotes(
+      window.localStorage.getItem(`ye2k-notes:${workspaceBeat.id}`) || ""
+    );
+    setWorkspaceSaved(false);
+  }, [workspaceBeat]);
+
+  useEffect(() => {
+    if (!workspaceBeat || !autoSaveEnabled) return;
+
+    const timeout = window.setTimeout(() => {
+      window.localStorage.setItem(
+        `ye2k-notes:${workspaceBeat.id}`,
+        workspaceNotes
+      );
+      setWorkspaceSaved(true);
+    }, 250);
+
+    return () => window.clearTimeout(timeout);
+  }, [autoSaveEnabled, workspaceBeat, workspaceNotes]);
+
+  useEffect(() => {
+    if (!workspaceBeat) return;
+
+    const closeWorkspace = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setWorkspaceBeat(null);
+    };
+
+    document.body.classList.add("workspace-open");
+    window.addEventListener("keydown", closeWorkspace);
+
+    return () => {
+      document.body.classList.remove("workspace-open");
+      window.removeEventListener("keydown", closeWorkspace);
+    };
+  }, [workspaceBeat]);
+
+  function saveWorkspaceNotes() {
+    if (!workspaceBeat) return;
+
+    window.localStorage.setItem(
+      `ye2k-notes:${workspaceBeat.id}`,
+      workspaceNotes
+    );
+    setWorkspaceSaved(true);
+  }
+
+  function downloadWorkspaceNotes() {
+    if (!workspaceBeat) return;
+
+    const title = workspaceBeat.catalog_code
+      ? `${workspaceBeat.catalog_code}-${workspaceBeat.title}`
+      : workspaceBeat.title;
+    const safeName =
+      title.replace(/[^a-z0-9-_ ]/gi, "").trim() || "YE2K-notes";
+    const content = [
+      workspaceBeat.catalog_code || "YE2K",
+      workspaceBeat.title,
+      workspaceBeat.producer,
+      "",
+      workspaceNotes
+    ].join("\n");
+
+    const blob = new Blob([content], {
+      type: "text/plain;charset=utf-8"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${safeName}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function buyNow(beat: Beat) {
     if (!has(beat.id)) add(beat);
     setCartOpen(true);
@@ -524,6 +620,23 @@ export default function Storefront() {
 
   return (
     <main className="site-shell">
+      {!loading && announcement?.enabled && announcement.text && (
+        <div className="announcement-bar">
+          {announcement.link ? (
+            <a
+              href={announcement.link}
+              target={announcement.openInNewTab ? "_blank" : undefined}
+              rel={announcement.openInNewTab ? "noreferrer" : undefined}
+            >
+              <span>{announcement.text}</span>
+              <b>→</b>
+            </a>
+          ) : (
+            <span>{announcement.text}</span>
+          )}
+        </div>
+      )}
+
       <header className="site-header">
         <div className="brand-world">
           <Link href="/" className="brand">
@@ -725,6 +838,14 @@ export default function Storefront() {
                         >
                           {has(beat.id) ? "Added" : "Add"}
                         </button>
+                        {workspaceEnabled && (
+                          <button
+                            className="workspace-open-btn"
+                            onClick={() => setWorkspaceBeat(beat)}
+                          >
+                            Write
+                          </button>
+                        )}
                       </div>
                     </div>
                   </article>
@@ -784,6 +905,147 @@ export default function Storefront() {
           </button>
         </div>
       </footer>
+
+      {workspaceBeat && (
+        <div
+          className="workspace-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setWorkspaceBeat(null);
+            }
+          }}
+        >
+          <section
+            className="beat-workspace"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="workspace-title"
+          >
+            <header className="workspace-header">
+              <div>
+                <p>
+                  {workspaceBeat.catalog_code || "YE2K"} / CREATIVE SESSION
+                </p>
+                <h2 id="workspace-title">{workspaceBeat.title}</h2>
+                <span>{workspaceBeat.producer}</span>
+              </div>
+              <button
+                className="workspace-close"
+                onClick={() => setWorkspaceBeat(null)}
+                aria-label="Close workspace"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="workspace-player">
+              <button
+                className="workspace-play"
+                onClick={() => playBeat(workspaceBeat)}
+                aria-label={`${
+                  activeBeat?.id === workspaceBeat.id && playing
+                    ? "Pause"
+                    : "Play"
+                } ${workspaceBeat.title}`}
+              >
+                {activeBeat?.id === workspaceBeat.id && playing ? "Ⅱ" : "▶"}
+              </button>
+
+              <div>
+                <WaveformCanvas
+                  src={publicUrl(
+                    "beat-previews",
+                    workspaceBeat.preview_path
+                  )}
+                  currentTime={
+                    activeBeat?.id === workspaceBeat.id ? currentTime : 0
+                  }
+                  duration={
+                    durations[workspaceBeat.id] ||
+                    (activeBeat?.id === workspaceBeat.id ? duration : 0)
+                  }
+                  playing={
+                    activeBeat?.id === workspaceBeat.id && playing
+                  }
+                  onSeek={(seconds) => seekBeat(workspaceBeat, seconds)}
+                  onDuration={(seconds) =>
+                    rememberDuration(workspaceBeat.id, seconds)
+                  }
+                />
+                <div className="workspace-time">
+                  <span>
+                    {formatTime(
+                      activeBeat?.id === workspaceBeat.id
+                        ? currentTime
+                        : 0
+                    )}
+                  </span>
+                  <span>
+                    {formatTime(
+                      durations[workspaceBeat.id] ||
+                        (activeBeat?.id === workspaceBeat.id
+                          ? duration
+                          : 0)
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {lyricsEnabled && (
+              <div className="workspace-notes">
+                <div className="workspace-notes-heading">
+                  <div>
+                    <p>NOTEPAD</p>
+                    <h3>Write while the beat plays.</h3>
+                  </div>
+                  <span>
+                    {autoSaveEnabled
+                      ? workspaceSaved
+                        ? "Saved in this browser"
+                        : "Auto-saving"
+                      : "Manual save"}
+                  </span>
+                </div>
+
+                <textarea
+                  value={workspaceNotes}
+                  onChange={(event) => {
+                    setWorkspaceNotes(event.target.value);
+                    setWorkspaceSaved(false);
+                  }}
+                  placeholder="Start writing…"
+                  spellCheck
+                />
+              </div>
+            )}
+
+            <footer className="workspace-actions">
+              <div>
+                {lyricsEnabled && !autoSaveEnabled && (
+                  <button onClick={saveWorkspaceNotes}>Save notes</button>
+                )}
+                {lyricsEnabled && txtDownloadEnabled && (
+                  <button onClick={downloadWorkspaceNotes}>
+                    Download TXT
+                  </button>
+                )}
+              </div>
+
+              <button
+                className="workspace-buy"
+                onClick={() => {
+                  buyNow(workspaceBeat);
+                  setWorkspaceBeat(null);
+                }}
+              >
+                Buy beat — ${Number(workspaceBeat.price).toFixed(2)}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
 
       {legalModal && (
         <div
