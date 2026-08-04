@@ -325,6 +325,7 @@ export default function Storefront() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const workspaceTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -521,10 +522,39 @@ export default function Storefront() {
   useEffect(() => {
     if (!workspaceBeat) return;
 
-    setWorkspaceNotes(
-      window.localStorage.getItem(`ye2k-notes:${workspaceBeat.id}`) || ""
-    );
+    const notesKey = `ye2k-notes:${workspaceBeat.id}`;
+    const viewKey = `ye2k-notes-view:${workspaceBeat.id}`;
+    setWorkspaceNotes(window.localStorage.getItem(notesKey) || "");
     setWorkspaceSaved(false);
+
+    window.requestAnimationFrame(() => {
+      const textarea = workspaceTextareaRef.current;
+      if (!textarea) return;
+
+      try {
+        const savedView = JSON.parse(
+          window.localStorage.getItem(viewKey) || "{}"
+        ) as {
+          scrollTop?: number;
+          selectionStart?: number;
+          selectionEnd?: number;
+        };
+
+        textarea.scrollTop = savedView.scrollTop || 0;
+
+        if (
+          typeof savedView.selectionStart === "number" &&
+          typeof savedView.selectionEnd === "number"
+        ) {
+          textarea.setSelectionRange(
+            savedView.selectionStart,
+            savedView.selectionEnd
+          );
+        }
+      } catch {
+        // Ignore malformed local browser data.
+      }
+    });
   }, [workspaceBeat]);
 
   useEffect(() => {
@@ -845,8 +875,18 @@ export default function Storefront() {
                           <button
                             className="workspace-open-btn"
                             onClick={() => setWorkspaceBeat(beat)}
+                            aria-label={`Open writing workspace for ${beat.title}`}
+                            title="Workspace"
                           >
-                            Write
+                            <svg
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                              focusable="false"
+                            >
+                              <path d="M6.5 3.5h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z" />
+                              <path d="M8.5 8h7M8.5 12h7M8.5 16h4.5" />
+                              <path d="M4.5 7H2.8M4.5 11H2.8M4.5 15H2.8" />
+                            </svg>
                           </button>
                         )}
                       </div>
@@ -927,10 +967,9 @@ export default function Storefront() {
           >
             <header className="workspace-header">
               <div>
-                <p>
-                  {workspaceBeat.catalog_code || "YE2K"} / CREATIVE SESSION
-                </p>
-                <h2 id="workspace-title">{workspaceBeat.title}</h2>
+                <p>{workspaceBeat.catalog_code || "YE2K"}</p>
+                <h2 id="workspace-title">Creative Session</h2>
+                <strong>{workspaceBeat.title}</strong>
                 <span>{workspaceBeat.producer}</span>
               </div>
               <button
@@ -1006,17 +1045,53 @@ export default function Storefront() {
                   <span>
                     {autoSaveEnabled
                       ? workspaceSaved
-                        ? "Saved in this browser"
-                        : "Auto-saving"
+                        ? "● Saved"
+                        : "● Saving"
                       : "Manual save"}
                   </span>
                 </div>
 
                 <textarea
+                  ref={workspaceTextareaRef}
                   value={workspaceNotes}
                   onChange={(event) => {
                     setWorkspaceNotes(event.target.value);
                     setWorkspaceSaved(false);
+
+                    if (workspaceBeat) {
+                      window.localStorage.setItem(
+                        `ye2k-notes-view:${workspaceBeat.id}`,
+                        JSON.stringify({
+                          scrollTop: event.currentTarget.scrollTop,
+                          selectionStart: event.currentTarget.selectionStart,
+                          selectionEnd: event.currentTarget.selectionEnd
+                        })
+                      );
+                    }
+                  }}
+                  onScroll={(event) => {
+                    if (!workspaceBeat) return;
+
+                    window.localStorage.setItem(
+                      `ye2k-notes-view:${workspaceBeat.id}`,
+                      JSON.stringify({
+                        scrollTop: event.currentTarget.scrollTop,
+                        selectionStart: event.currentTarget.selectionStart,
+                        selectionEnd: event.currentTarget.selectionEnd
+                      })
+                    );
+                  }}
+                  onSelect={(event) => {
+                    if (!workspaceBeat) return;
+
+                    window.localStorage.setItem(
+                      `ye2k-notes-view:${workspaceBeat.id}`,
+                      JSON.stringify({
+                        scrollTop: event.currentTarget.scrollTop,
+                        selectionStart: event.currentTarget.selectionStart,
+                        selectionEnd: event.currentTarget.selectionEnd
+                      })
+                    );
                   }}
                   placeholder="Start writing…"
                   spellCheck
@@ -1027,10 +1102,14 @@ export default function Storefront() {
             <footer className="workspace-actions">
               <div>
                 {lyricsEnabled && !autoSaveEnabled && (
-                  <button onClick={saveWorkspaceNotes}>Save notes</button>
+                  <button className="workspace-save" onClick={saveWorkspaceNotes}>Save notes</button>
                 )}
                 {lyricsEnabled && txtDownloadEnabled && (
-                  <button onClick={downloadWorkspaceNotes}>
+                  <button
+                    className="workspace-download"
+                    onClick={downloadWorkspaceNotes}
+                  >
+                    <span aria-hidden="true">↓</span>
                     Download TXT
                   </button>
                 )}
