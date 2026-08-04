@@ -1281,3 +1281,255 @@ footer>div:last-child{display:flex;gap:20px}
   .about-band{padding:80px 0}
   footer{grid-template-columns:1fr;align-items:start}
 }
+
+
+/* YE2K catalog management, content loading, and responsive refinements */
+.danger-btn{
+  border:1px solid #c83b3b;
+  background:transparent;
+  color:#ff6b6b;
+  border-radius:9px;
+  padding:10px 14px;
+  font-weight:800;
+  cursor:pointer;
+}
+.danger-btn:hover{
+  background:#c83b3b;
+  color:#fff;
+}
+.danger-btn:disabled,
+.ghost-btn:disabled,
+.status-btn:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+.hero-loading{
+  overflow:hidden;
+}
+.hero-loading-content{
+  width:min(920px,100%);
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.hero-loading-content span,
+.hero-loading-content i,
+.hero-loading-content small{
+  display:block;
+  background:linear-gradient(
+    90deg,
+    rgba(255,255,255,.04),
+    rgba(255,255,255,.12),
+    rgba(255,255,255,.04)
+  );
+  background-size:220% 100%;
+  animation:content-shimmer 1.25s linear infinite;
+}
+.hero-loading-content span{
+  width:220px;
+  height:12px;
+}
+.hero-loading-content i{
+  width:min(820px,92%);
+  height:70px;
+}
+.hero-loading-content i:nth-child(3){
+  width:min(610px,72%);
+}
+.hero-loading-content small{
+  width:min(520px,78%);
+  height:18px;
+  margin-top:10px;
+}
+@keyframes content-shimmer{
+  to{background-position:-220% 0}
+}
+
+@media(max-width:900px){
+  .site-shell{
+    padding:0 20px;
+  }
+  .site-header{
+    height:72px;
+    grid-template-columns:auto 1fr auto;
+  }
+  .site-header nav{
+    gap:20px;
+    justify-self:center;
+  }
+  .site-header nav a{
+    padding:26px 0;
+  }
+  .hero{
+    min-height:300px;
+    padding:48px 0;
+  }
+  .hero h1{
+    font-size:clamp(44px,11vw,76px);
+  }
+  .hero-copy{
+    font-size:16px;
+  }
+  .samples-header{
+    flex-direction:column;
+    align-items:stretch;
+    gap:20px;
+  }
+  .samples-tools{
+    width:100%;
+  }
+  .samples-tools input{
+    width:100%;
+    min-width:0;
+  }
+  .admin-grid{
+    grid-template-columns:1fr;
+  }
+  .admin-panel{
+    padding:22px;
+  }
+  .settings-heading{
+    flex-direction:column;
+  }
+  .admin-item{
+    align-items:flex-start;
+    gap:14px;
+  }
+  .admin-item-actions{
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+}
+
+@media(max-width:640px){
+  .site-shell{
+    padding:0 14px;
+  }
+  .site-header{
+    grid-template-columns:1fr auto;
+    height:66px;
+  }
+  .site-header nav{
+    display:none;
+  }
+  .brand{
+    font-size:26px;
+  }
+  .header-actions{
+    gap:8px;
+  }
+  .header-actions>a:first-child{
+    width:36px;
+    height:36px;
+  }
+  .cart-pill{
+    padding:7px 10px;
+  }
+  .hero{
+    min-height:260px;
+    padding:38px 4px;
+  }
+  .hero h1{
+    font-size:clamp(38px,13vw,58px);
+    line-height:.95;
+  }
+  .hero-copy{
+    font-size:15px;
+    line-height:1.5;
+  }
+  .hero-loading-content i{
+    height:46px;
+  }
+  .samples-shell{
+    padding:32px 0 58px;
+  }
+  .samples-header h2{
+    font-size:32px;
+  }
+  .samples-tools{
+    display:grid;
+    grid-template-columns:1fr auto;
+  }
+  .sample-card{
+    grid-template-columns:72px 48px minmax(0,1fr);
+  }
+  .sample-cover-wrap{
+    width:72px;
+    min-width:72px;
+    height:82px;
+  }
+  .sample-play{
+    width:38px;
+    height:38px;
+  }
+  .sample-info{
+    min-width:0;
+  }
+  .sample-info h3{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .sample-waveform{
+    grid-column:1/-1;
+    padding:10px 12px;
+  }
+  .sample-footer{
+    grid-column:1/-1;
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:12px;
+  }
+  .sample-actions{
+    justify-content:flex-end;
+  }
+  .buy-now-btn,
+  .card-add-btn{
+    min-height:44px;
+    padding:10px 13px;
+  }
+  .cart-drawer{
+    width:100vw;
+  }
+  .admin-shell,
+  .checkout-page{
+    padding:16px;
+  }
+  .admin-topbar{
+    align-items:flex-start;
+  }
+  .admin-panel{
+    padding:18px;
+    border-radius:12px;
+  }
+  .admin-panel h1,
+  .login-card h1,
+  .checkout-card h1,
+  .success-card h1{
+    font-size:34px;
+  }
+  .form-grid,
+  .upload-grid{
+    grid-template-columns:1fr;
+  }
+  .settings-description-field{
+    grid-column:auto;
+  }
+  .admin-item{
+    flex-direction:column;
+  }
+  .admin-item-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+  .admin-item-actions button{
+    flex:1;
+    min-height:44px;
+  }
+  footer{
+    grid-template-columns:1fr;
+    gap:16px;
+    text-align:left;
+  }
+}
