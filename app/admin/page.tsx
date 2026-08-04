@@ -29,6 +29,10 @@ const defaultSiteSettings: SiteSettings = {
     media: {
       globalCoverPath: ""
     },
+    branding: {
+      headerLogoText: "YE2K",
+      footerLogoText: "YE2K"
+    },
     about: {
       visible: true,
       eyebrow: "THE YE2K STANDARD",
@@ -108,6 +112,12 @@ export default function AdminPage() {
         media: {
           ...(siteSettings.settings?.media || {}),
           globalCoverPath
+        },
+        branding: {
+          headerLogoText:
+            siteSettings.settings?.branding?.headerLogoText?.trim() || "YE2K",
+          footerLogoText:
+            siteSettings.settings?.branding?.footerLogoText?.trim() || "YE2K"
         },
         about: {
           visible: siteSettings.settings?.about?.visible !== false,
@@ -504,6 +514,60 @@ export default function AdminPage() {
                 required
               />
             </label>
+          </div>
+
+          <div className="settings-subsection">
+            <div>
+              <p className="eyebrow">BRANDING</p>
+              <h3>Logo text</h3>
+              <p className="settings-help">
+                Change the text inside the existing top and footer logo badges.
+              </p>
+            </div>
+
+            <div className="form-grid">
+              <label>
+                Top logo text
+                <input
+                  value={siteSettings.settings?.branding?.headerLogoText || ""}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        branding: {
+                          ...(siteSettings.settings?.branding || {}),
+                          headerLogoText: event.target.value
+                        }
+                      }
+                    })
+                  }
+                  maxLength={12}
+                  placeholder="YE2K"
+                />
+              </label>
+
+              <label>
+                Bottom logo text
+                <input
+                  value={siteSettings.settings?.branding?.footerLogoText || ""}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        branding: {
+                          ...(siteSettings.settings?.branding || {}),
+                          footerLogoText: event.target.value
+                        }
+                      }
+                    })
+                  }
+                  maxLength={12}
+                  placeholder="YE2K"
+                />
+              </label>
+            </div>
           </div>
 
           <div className="settings-subsection">
