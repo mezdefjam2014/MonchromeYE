@@ -526,7 +526,7 @@ export default function Storefront() {
           <a href="#beats" className="active">
             Beats
           </a>
-          {aboutVisible && <a href="#about">About</a>}
+          {!loading && aboutVisible && <a href="#about">About</a>}
         </nav>
 
         <div className="header-actions">
@@ -542,17 +542,28 @@ export default function Storefront() {
         </div>
       </header>
 
-      <section className="hero hero-clean">
-        <div>
-          <p className="eyebrow">{settings.eyebrow}</p>
-          <h1>
-            {settings.headline_primary}
-            <br />
-            <em>{settings.headline_accent}</em>
-          </h1>
-          <p className="hero-copy">{settings.description}</p>
-        </div>
-      </section>
+      {loading ? (
+        <section className="hero hero-clean hero-loading" aria-label="Loading website content">
+          <div className="hero-loading-content" aria-hidden="true">
+            <span />
+            <i />
+            <i />
+            <small />
+          </div>
+        </section>
+      ) : (
+        <section className="hero hero-clean">
+          <div>
+            <p className="eyebrow">{settings.eyebrow}</p>
+            <h1>
+              {settings.headline_primary}
+              <br />
+              <em>{settings.headline_accent}</em>
+            </h1>
+            <p className="hero-copy">{settings.description}</p>
+          </div>
+        </section>
+      )}
 
       <section className="samples-shell" id="beats">
         <div className="samples-header">
@@ -718,7 +729,7 @@ export default function Storefront() {
         )}
       </section>
 
-      {aboutVisible && (
+      {!loading && aboutVisible && (
         <section className="about-band" id="about">
           <p className="eyebrow">
             {settings.settings?.about?.eyebrow ||
