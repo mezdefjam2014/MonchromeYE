@@ -25,6 +25,10 @@ const defaultSettings: SiteSettings = {
     media: {
       globalCoverPath: ""
     },
+    branding: {
+      headerLogoText: "YE2K",
+      footerLogoText: "YE2K"
+    },
     about: {
       visible: true,
       eyebrow: "THE YE2K STANDARD",
@@ -418,6 +422,10 @@ export default function Storefront() {
   const coverUrlFor = (beat: Beat) =>
     publicUrl("beat-covers", globalCoverPath || beat.cover_path);
 
+  const headerLogoText =
+    settings.settings?.branding?.headerLogoText?.trim() || "YE2K";
+  const footerLogoText =
+    settings.settings?.branding?.footerLogoText?.trim() || "YE2K";
   const aboutVisible = settings.settings?.about?.visible !== false;
   const announcement = settings.settings?.announcement;
   const creativeSettings = settings.settings?.creative;
@@ -672,8 +680,8 @@ export default function Storefront() {
 
       <header className="site-header">
         <div className="brand-world">
-          <Link href="/" className="brand">
-            <span>YE2K</span>
+          <Link href="/" className="brand" aria-label={`${headerLogoText} home`}>
+            <span>{headerLogoText}</span>
           </Link>
           <div className="world-mark" aria-label="Worldwide digital delivery">
             <span className="world-globe" aria-hidden="true">
@@ -873,20 +881,23 @@ export default function Storefront() {
                         </button>
                         {workspaceEnabled && (
                           <button
+                            type="button"
                             className="workspace-open-btn"
                             onClick={() => setWorkspaceBeat(beat)}
                             aria-label={`Open writing workspace for ${beat.title}`}
-                            title="Workspace"
+                            title="Open writing workspace"
                           >
                             <svg
+                              className="workspace-notepad-icon"
                               viewBox="0 0 24 24"
                               aria-hidden="true"
                               focusable="false"
                             >
-                              <path d="M6.5 3.5h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z" />
-                              <path d="M8.5 8h7M8.5 12h7M8.5 16h4.5" />
-                              <path d="M4.5 7H2.8M4.5 11H2.8M4.5 15H2.8" />
+                              <rect x="6" y="3.5" width="14" height="17" rx="2" />
+                              <path d="M9.5 8h7M9.5 12h7M9.5 16h5" />
+                              <path d="M6 7H3.5M6 11H3.5M6 15H3.5" />
                             </svg>
+                            <span className="sr-only">Open writing workspace</span>
                           </button>
                         )}
                       </div>
@@ -935,8 +946,8 @@ export default function Storefront() {
       )}
 
       <footer>
-        <div className="brand">
-          <span>YE2K</span>
+        <div className="brand footer-brand" aria-label={footerLogoText}>
+          <span>{footerLogoText}</span>
         </div>
         <p>Premium beats. Clear pricing. Instant delivery.</p>
         <div>
