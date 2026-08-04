@@ -1,6 +1,7 @@
 export type Beat = {
   id: string;
   title: string;
+  catalog_code: string | null;
   slug: string;
   producer: string;
   price: number;
