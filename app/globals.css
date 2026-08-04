@@ -2019,3 +2019,175 @@ body.workspace-open{overflow:hidden}
   .workspace-actions button{width:100%}
   .creative-toggle-grid{grid-template-columns:1fr}
 }
+
+/* Workspace contrast and compact notebook trigger */
+.workspace-open-btn{
+  width:36px;
+  height:36px;
+  min-height:36px;
+  display:grid;
+  place-items:center;
+  flex:0 0 36px;
+  padding:0;
+  border:1px solid #000;
+  border-radius:6px;
+  background:#000;
+  color:#fff;
+}
+.workspace-open-btn svg{
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.workspace-open-btn:hover,
+.workspace-open-btn:focus-visible{
+  background:#fff;
+  color:#000;
+  outline:none;
+}
+
+.beat-workspace{
+  background:#080808;
+  color:#fff;
+}
+.workspace-header{
+  padding:26px 32px 24px;
+  background:#080808;
+  color:#fff;
+}
+.workspace-header p{
+  color:#9a9a9a;
+}
+.workspace-header h2{
+  color:#fff;
+  font-size:clamp(40px,6vw,78px);
+}
+.workspace-header strong{
+  display:block;
+  margin-top:14px;
+  color:#fff;
+  font-size:18px;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+.workspace-header span{
+  color:#9a9a9a;
+}
+.workspace-close{
+  border-color:#fff;
+  background:#000;
+  color:#fff;
+}
+.workspace-close:hover,
+.workspace-close:focus-visible{
+  background:#fff;
+  color:#000;
+}
+
+.workspace-player,
+.workspace-notes{
+  background:#080808;
+  color:#fff;
+}
+.workspace-notes-heading p,
+.workspace-notes-heading h3{
+  color:#fff;
+}
+.workspace-notes-heading>span{
+  color:#b8b8b8;
+}
+.workspace-notes textarea{
+  min-height:300px;
+  border-color:#343434;
+  background:#111;
+  color:#fff;
+  caret-color:#fff;
+}
+.workspace-notes textarea::placeholder{
+  color:#8a8a8a;
+  opacity:1;
+}
+.workspace-notes textarea:focus{
+  border-color:#fff;
+  box-shadow:0 0 0 1px #fff inset;
+}
+
+.workspace-actions{
+  background:#fff;
+  color:#000;
+}
+.workspace-actions button{
+  min-height:46px;
+  border:1px solid #000;
+  background:#000;
+  color:#fff;
+}
+.workspace-actions button:hover,
+.workspace-actions button:focus-visible{
+  background:#262626;
+  color:#fff;
+  outline:none;
+}
+.workspace-actions .workspace-buy{
+  border-color:#000;
+  background:#000;
+  color:#fff;
+}
+.workspace-download{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+}
+.workspace-download span{
+  font-size:18px;
+  line-height:1;
+}
+
+/* Legal modals use black headings on their white surface */
+.legal-modal,
+.legal-modal-header,
+.legal-modal-body{
+  color:#111;
+}
+.legal-modal-header h2,
+.legal-modal-body h3{
+  color:#000 !important;
+}
+.legal-kicker{
+  color:#555 !important;
+}
+.legal-close{
+  border-color:#000;
+  background:#000;
+  color:#fff;
+}
+.legal-close:hover,
+.legal-close:focus-visible{
+  background:#222;
+  color:#fff;
+}
+
+@media(max-width:760px){
+  .workspace-open-btn{
+    width:40px;
+    height:40px;
+    min-height:40px;
+    flex-basis:40px;
+  }
+  .workspace-header{
+    padding:20px 18px;
+  }
+  .workspace-header h2{
+    font-size:42px;
+  }
+  .workspace-notes textarea{
+    min-height:42vh;
+  }
+  .workspace-actions>div{
+    grid-template-columns:1fr;
+  }
+}
