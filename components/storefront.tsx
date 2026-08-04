@@ -370,6 +370,25 @@ function InteractiveWorld() {
 
     let animationFrame = 0;
     let previousTime = performance.now();
+    let lastWidth = 0;
+    let lastHeight = 0;
+    let pixelRatio = 1;
+
+    const resizeCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.round(rect.width));
+      const height = Math.max(1, Math.round(rect.height));
+      pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+      if (width !== lastWidth || height !== lastHeight) {
+        lastWidth = width;
+        lastHeight = height;
+        canvas.width = Math.max(1, Math.floor(width * pixelRatio));
+        canvas.height = Math.max(1, Math.floor(height * pixelRatio));
+      }
+
+      return { width, height };
+    };
 
     const project = (
       lon: number,
@@ -385,26 +404,35 @@ function InteractiveWorld() {
       return {
         x: centerX + radius * Math.cos(phi) * Math.sin(lambda),
         y: centerY - radius * Math.sin(phi),
-        visible: visibility > 0
+        depth: visibility,
+        visible: visibility > 0.08
       };
     };
 
+    const boxesOverlap = (
+      a: { left: number; top: number; right: number; bottom: number },
+      b: { left: number; top: number; right: number; bottom: number }
+    ) =>
+      !(
+        a.right + 6 < b.left ||
+        a.left > b.right + 6 ||
+        a.bottom + 4 < b.top ||
+        a.top > b.bottom + 4
+      );
+
     const draw = (now: number) => {
-      const rect = canvas.getBoundingClientRect();
-      const pixelRatio = window.devicePixelRatio || 1;
-      const width = Math.max(1, rect.width);
-      const height = Math.max(1, rect.height);
-
-      canvas.width = Math.floor(width * pixelRatio);
-      canvas.height = Math.floor(height * pixelRatio);
-
+      const { width, height } = resizeCanvas();
       const context = canvas.getContext("2d");
       if (!context) return;
 
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       context.clearRect(0, 0, width, height);
 
-      const radius = Math.min(width * 0.42, height * 0.43);
+      const compact = width < 520;
+      const radius = Math.max(
+        84,
+        Math.min(width * (compact ? 0.34 : 0.36), height * 0.4)
+      );
       const centerX = width / 2;
       const centerY = height * 0.47;
 
@@ -419,7 +447,7 @@ function InteractiveWorld() {
       ) {
         const elapsed = Math.min(40, now - previousTime);
         rotationRef.current =
-          (rotationRef.current + elapsed * 0.0022) % 360;
+          (rotationRef.current + elapsed * 0.0018) % 360;
       }
 
       previousTime = now;
@@ -429,8 +457,8 @@ function InteractiveWorld() {
       context.arc(centerX, centerY, radius, 0, Math.PI * 2);
       context.clip();
 
-      context.strokeStyle = "#d0d0d0";
-      context.lineWidth = 0.8;
+      context.strokeStyle = "#d4d4d4";
+      context.lineWidth = 0.75;
 
       for (let lat = -60; lat <= 60; lat += 20) {
         context.beginPath();
@@ -479,7 +507,7 @@ function InteractiveWorld() {
       }
 
       context.strokeStyle = "#111111";
-      context.lineWidth = 1.1;
+      context.lineWidth = compact ? 0.9 : 1.05;
 
       continentLines.forEach((line) => {
         context.beginPath();
@@ -509,10 +537,10 @@ function InteractiveWorld() {
       context.beginPath();
       context.arc(centerX, centerY, radius, 0, Math.PI * 2);
       context.strokeStyle = "#111111";
-      context.lineWidth = 1.25;
+      context.lineWidth = 1.15;
       context.stroke();
 
-      const visibleCities = globeCities
+      const candidates = globeCities
         .map((city) => ({
           city,
           point: project(
@@ -524,35 +552,77 @@ function InteractiveWorld() {
           )
         }))
         .filter(({ point }) => point.visible)
-        .sort((a, b) => a.point.y - b.point.y)
-        .slice(0, width < 520 ? 4 : 6);
+        .sort((a, b) => b.point.depth - a.point.depth);
 
-      visibleCities.forEach(({ city, point }, index) => {
-        const alignRight = point.x > centerX;
-        const labelX = point.x + (alignRight ? 10 : -10);
-        const labelY = point.y + (index % 2 === 0 ? -4 : 10);
+      const maxLabels = compact ? 4 : width < 700 ? 5 : 7;
+      const occupied: Array<{
+        left: number;
+        top: number;
+        right: number;
+        bottom: number;
+      }> = [];
+
+      candidates.slice(0, 10).forEach(({ city, point }) => {
+        if (occupied.length >= maxLabels) return;
+
+        const alignRight = point.x >= centerX;
+        const cityFont = compact ? 9 : 11;
+        const countryFont = compact ? 7 : 9;
+        const offset = compact ? 7 : 10;
+        const labelX = point.x + (alignRight ? offset : -offset);
+        const labelY = point.y - 3;
+
+        context.font = `800 ${cityFont}px Arial, sans-serif`;
+        const cityWidth = context.measureText(city.city).width;
+        context.font = `600 ${countryFont}px Arial, sans-serif`;
+        const countryWidth = context.measureText(city.country).width;
+        const labelWidth = Math.max(cityWidth, countryWidth);
+        const box = {
+          left: alignRight ? labelX : labelX - labelWidth,
+          top: labelY - cityFont,
+          right: alignRight ? labelX + labelWidth : labelX,
+          bottom: labelY + countryFont + 8
+        };
+
+        if (
+          box.left < 4 ||
+          box.right > width - 4 ||
+          box.top < 4 ||
+          box.bottom > height - 4 ||
+          occupied.some((current) => boxesOverlap(current, box))
+        ) {
+          return;
+        }
+
+        occupied.push(box);
 
         context.beginPath();
-        context.arc(point.x, point.y, 4, 0, Math.PI * 2);
+        context.arc(
+          point.x,
+          point.y,
+          compact ? 2.8 : 3.8,
+          0,
+          Math.PI * 2
+        );
         context.fillStyle = "#000000";
         context.fill();
 
         context.textAlign = alignRight ? "left" : "right";
         context.fillStyle = "#000000";
-        context.font = "800 11px Arial, sans-serif";
+        context.font = `800 ${cityFont}px Arial, sans-serif`;
         context.fillText(city.city, labelX, labelY);
         context.fillStyle = "#555555";
-        context.font = "600 9px Arial, sans-serif";
-        context.fillText(city.country, labelX, labelY + 12);
+        context.font = `600 ${countryFont}px Arial, sans-serif`;
+        context.fillText(city.country, labelX, labelY + countryFont + 4);
       });
 
-      context.fillStyle = "rgba(0,0,0,.08)";
+      context.fillStyle = "rgba(0,0,0,.075)";
       context.beginPath();
       context.ellipse(
         centerX,
-        centerY + radius + 16,
-        radius * 0.62,
-        8,
+        centerY + radius + Math.max(10, radius * 0.035),
+        radius * 0.56,
+        Math.max(4, radius * 0.018),
         0,
         0,
         Math.PI * 2
@@ -562,38 +632,57 @@ function InteractiveWorld() {
       animationFrame = window.requestAnimationFrame(draw);
     };
 
+    const resizeObserver = new ResizeObserver(() => {
+      lastWidth = 0;
+      lastHeight = 0;
+    });
+    resizeObserver.observe(canvas);
+
     animationFrame = window.requestAnimationFrame(draw);
 
-    return () => window.cancelAnimationFrame(animationFrame);
+    return () => {
+      resizeObserver.disconnect();
+      window.cancelAnimationFrame(animationFrame);
+    };
   }, []);
 
   return (
     <div className="interactive-world">
-      <canvas
-        ref={canvasRef}
-        aria-label="Interactive world map. Drag to rotate."
-        onPointerDown={(event) => {
-          draggingRef.current = true;
-          lastPointerXRef.current = event.clientX;
-          event.currentTarget.setPointerCapture(event.pointerId);
-        }}
-        onPointerMove={(event) => {
-          if (!draggingRef.current) return;
+      <div className="interactive-world-frame">
+        <canvas
+          ref={canvasRef}
+          aria-label="Interactive world map. Drag to rotate."
+          onPointerDown={(event) => {
+            draggingRef.current = true;
+            lastPointerXRef.current = event.clientX;
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            if (!draggingRef.current) return;
 
-          const delta = event.clientX - lastPointerXRef.current;
-          rotationRef.current += delta * 0.35;
-          lastPointerXRef.current = event.clientX;
-        }}
-        onPointerUp={(event) => {
-          draggingRef.current = false;
-          resumeAtRef.current = performance.now() + 2500;
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }}
-        onPointerCancel={() => {
-          draggingRef.current = false;
-          resumeAtRef.current = performance.now() + 2500;
-        }}
-      />
+            const delta = event.clientX - lastPointerXRef.current;
+            rotationRef.current += delta * 0.34;
+            lastPointerXRef.current = event.clientX;
+          }}
+          onPointerUp={(event) => {
+            draggingRef.current = false;
+            resumeAtRef.current = performance.now() + 2500;
+
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          onPointerCancel={(event) => {
+            draggingRef.current = false;
+            resumeAtRef.current = performance.now() + 2500;
+
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+        />
+      </div>
+
       <p className="world-instruction">
         <span aria-hidden="true">↔</span>
         Drag to rotate
@@ -601,6 +690,7 @@ function InteractiveWorld() {
     </div>
   );
 }
+
 
 export default function Storefront() {
   const supabase = useMemo(() => createBrowserClient(), []);
