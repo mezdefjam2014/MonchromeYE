@@ -34,6 +34,18 @@ const defaultSiteSettings: SiteSettings = {
       eyebrow: "THE YE2K STANDARD",
       headline: "Built for artists who care how the record feels.",
       description: "Every beat comes with clear pricing and immediate access to every included file after payment."
+    },
+    announcement: {
+      enabled: false,
+      text: "NEW DROP — AVAILABLE NOW",
+      link: "",
+      openInNewTab: false
+    },
+    creative: {
+      workspaceEnabled: false,
+      lyricsEnabled: true,
+      autoSaveEnabled: true,
+      txtDownloadEnabled: true
     }
   },
   updated_at: ""
@@ -107,6 +119,25 @@ export default function AdminPage() {
           description:
             siteSettings.settings?.about?.description?.trim() ||
             "Every beat comes with clear pricing and immediate access to every included file after payment."
+        },
+        announcement: {
+          enabled: siteSettings.settings?.announcement?.enabled === true,
+          text:
+            siteSettings.settings?.announcement?.text?.trim() ||
+            "NEW DROP — AVAILABLE NOW",
+          link: siteSettings.settings?.announcement?.link?.trim() || "",
+          openInNewTab:
+            siteSettings.settings?.announcement?.openInNewTab === true
+        },
+        creative: {
+          workspaceEnabled:
+            siteSettings.settings?.creative?.workspaceEnabled === true,
+          lyricsEnabled:
+            siteSettings.settings?.creative?.lyricsEnabled !== false,
+          autoSaveEnabled:
+            siteSettings.settings?.creative?.autoSaveEnabled !== false,
+          txtDownloadEnabled:
+            siteSettings.settings?.creative?.txtDownloadEnabled !== false
         }
       };
 
@@ -500,6 +531,202 @@ export default function AdminPage() {
                 Current: {siteSettings.settings.media.globalCoverPath}
               </p>
             )}
+          </div>
+
+          <div className="settings-subsection">
+            <div>
+              <p className="eyebrow">ANNOUNCEMENT</p>
+              <h3>Drop-style announcement</h3>
+            </div>
+
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={siteSettings.settings?.announcement?.enabled === true}
+                onChange={(event) =>
+                  setSiteSettings({
+                    ...siteSettings,
+                    settings: {
+                      ...(siteSettings.settings || {}),
+                      announcement: {
+                        ...(siteSettings.settings?.announcement || {}),
+                        enabled: event.target.checked
+                      }
+                    }
+                  })
+                }
+              />
+              <span>
+                <strong>Show announcement bar</strong>
+                <small>Display a simple message above the header.</small>
+              </span>
+            </label>
+
+            <div className="form-grid">
+              <label>
+                Announcement text
+                <input
+                  value={siteSettings.settings?.announcement?.text || ""}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        announcement: {
+                          ...(siteSettings.settings?.announcement || {}),
+                          text: event.target.value
+                        }
+                      }
+                    })
+                  }
+                  placeholder="NEW DROP — 2K018 AVAILABLE NOW"
+                />
+              </label>
+
+              <label>
+                Announcement link
+                <input
+                  value={siteSettings.settings?.announcement?.link || ""}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        announcement: {
+                          ...(siteSettings.settings?.announcement || {}),
+                          link: event.target.value
+                        }
+                      }
+                    })
+                  }
+                  placeholder="#beats or https://..."
+                />
+              </label>
+            </div>
+
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={siteSettings.settings?.announcement?.openInNewTab === true}
+                onChange={(event) =>
+                  setSiteSettings({
+                    ...siteSettings,
+                    settings: {
+                      ...(siteSettings.settings || {}),
+                      announcement: {
+                        ...(siteSettings.settings?.announcement || {}),
+                        openInNewTab: event.target.checked
+                      }
+                    }
+                  })
+                }
+              />
+              <span>
+                <strong>Open in new tab</strong>
+                <small>Useful for external links.</small>
+              </span>
+            </label>
+          </div>
+
+          <div className="settings-subsection">
+            <div>
+              <p className="eyebrow">CREATIVE WORKSPACE</p>
+              <h3>Optional writing mode</h3>
+            </div>
+
+            <div className="creative-toggle-grid">
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={siteSettings.settings?.creative?.workspaceEnabled === true}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        creative: {
+                          ...(siteSettings.settings?.creative || {}),
+                          workspaceEnabled: event.target.checked
+                        }
+                      }
+                    })
+                  }
+                />
+                <span>
+                  <strong>Enable beat workspace</strong>
+                  <small>Adds a Write button to each beat.</small>
+                </span>
+              </label>
+
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={siteSettings.settings?.creative?.lyricsEnabled !== false}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        creative: {
+                          ...(siteSettings.settings?.creative || {}),
+                          lyricsEnabled: event.target.checked
+                        }
+                      }
+                    })
+                  }
+                />
+                <span>
+                  <strong>Enable notepad</strong>
+                  <small>Lets visitors write lyrics in the workspace.</small>
+                </span>
+              </label>
+
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={siteSettings.settings?.creative?.autoSaveEnabled !== false}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        creative: {
+                          ...(siteSettings.settings?.creative || {}),
+                          autoSaveEnabled: event.target.checked
+                        }
+                      }
+                    })
+                  }
+                />
+                <span>
+                  <strong>Auto-save notes</strong>
+                  <small>Saves separately for each beat in the browser.</small>
+                </span>
+              </label>
+
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={siteSettings.settings?.creative?.txtDownloadEnabled !== false}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        creative: {
+                          ...(siteSettings.settings?.creative || {}),
+                          txtDownloadEnabled: event.target.checked
+                        }
+                      }
+                    })
+                  }
+                />
+                <span>
+                  <strong>Enable TXT download</strong>
+                  <small>Lets visitors save their notes to their device.</small>
+                </span>
+              </label>
+            </div>
           </div>
 
           <div className="settings-subsection">
