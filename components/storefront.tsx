@@ -288,6 +288,8 @@ function WaveformCanvas({
   );
 }
 
+type LegalModal = "terms" | "privacy" | null;
+
 export default function Storefront() {
   const supabase = useMemo(() => createBrowserClient(), []);
   const { items, add, remove, has, total } = useCart();
@@ -303,6 +305,7 @@ export default function Storefront() {
   const [durations, setDurations] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
+  const [legalModal, setLegalModal] = useState<LegalModal>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -339,10 +342,14 @@ export default function Storefront() {
   }, [query]);
 
   useEffect(() => {
-    document.body.classList.toggle("cart-drawer-open", cartOpen);
+    const overlayOpen = cartOpen || legalModal !== null;
+    document.body.classList.toggle("cart-drawer-open", overlayOpen);
 
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setCartOpen(false);
+      if (event.key === "Escape") {
+        setCartOpen(false);
+        setLegalModal(null);
+      }
     };
 
     window.addEventListener("keydown", closeOnEscape);
@@ -351,7 +358,7 @@ export default function Storefront() {
       document.body.classList.remove("cart-drawer-open");
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [cartOpen]);
+  }, [cartOpen, legalModal]);
 
   const filteredBeats = useMemo(
     () =>
@@ -518,9 +525,19 @@ export default function Storefront() {
   return (
     <main className="site-shell">
       <header className="site-header">
-        <Link href="/" className="brand">
-          <span>YE2K</span>
-        </Link>
+        <div className="brand-world">
+          <Link href="/" className="brand">
+            <span>YE2K</span>
+          </Link>
+          <div className="world-mark" aria-label="Worldwide digital delivery">
+            <span className="world-globe" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <small>Worldwide</small>
+          </div>
+        </div>
 
         <nav>
           <a href="#beats" className="active">
@@ -653,7 +670,14 @@ export default function Storefront() {
                     </button>
 
                     <div className="sample-info">
-                      <h3>{beat.title}</h3>
+                      <h3>
+                        {beat.title}
+                        {beat.catalog_code && (
+                          <small className="catalog-code">
+                            {beat.catalog_code}
+                          </small>
+                        )}
+                      </h3>
                       <p>{beat.producer}</p>
                       <div className="sample-meta">
                         <span className="format-pill">
@@ -752,10 +776,154 @@ export default function Storefront() {
         </div>
         <p>Premium beats. Clear pricing. Instant delivery.</p>
         <div>
-          <a href="#">Terms</a>
-          <a href="#">Privacy</a>
+          <button type="button" onClick={() => setLegalModal("terms")}>
+            Terms
+          </button>
+          <button type="button" onClick={() => setLegalModal("privacy")}>
+            Privacy
+          </button>
         </div>
       </footer>
+
+      {legalModal && (
+        <div
+          className="legal-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setLegalModal(null);
+            }
+          }}
+        >
+          <section
+            className="legal-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="legal-modal-title"
+          >
+            <div className="legal-modal-header">
+              <div>
+                <p className="legal-kicker">YE2K</p>
+                <h2 id="legal-modal-title">
+                  {legalModal === "terms" ? "Terms of Use" : "Privacy Policy"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="legal-close"
+                onClick={() => setLegalModal(null)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="legal-modal-body">
+              {legalModal === "terms" ? (
+                <>
+                  <section>
+                    <h3>Digital purchases</h3>
+                    <p>
+                      All products are delivered digitally. By completing a
+                      purchase, you confirm that the beat title, included file
+                      formats, price, and order details are correct.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>Download access</h3>
+                    <p>
+                      Secure download links are issued after verified payment.
+                      You are responsible for saving purchased files before a
+                      temporary link expires. YE2K may reissue access when an
+                      order can be verified.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>Refunds</h3>
+                    <p>
+                      Because digital files are delivered immediately, sales are
+                      generally final. Refunds may be considered for duplicate
+                      charges, inaccessible files, or another verified technical
+                      failure that YE2K cannot correct.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>Rights and ownership</h3>
+                    <p>
+                      Copyright and ownership remain with YE2K unless a separate
+                      written agreement states otherwise. A purchase grants only
+                      the usage rights described with that product or provided in
+                      writing. Files may not be resold, redistributed, shared, or
+                      offered as standalone downloads.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>Availability and liability</h3>
+                    <p>
+                      YE2K may update pricing, availability, and site features at
+                      any time. To the fullest extent permitted by law, YE2K is
+                      not responsible for indirect losses, lost profits, or
+                      third-party service interruptions.
+                    </p>
+                  </section>
+                </>
+              ) : (
+                <>
+                  <section>
+                    <h3>Information collected</h3>
+                    <p>
+                      YE2K may collect account details, contact information,
+                      order records, download activity, and basic technical data
+                      needed to operate and secure the store.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>Payments</h3>
+                    <p>
+                      Payments are processed by Stripe. YE2K does not store full
+                      card numbers. Stripe may process payment and fraud-prevention
+                      information under its own privacy terms.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>Supabase and service providers</h3>
+                    <p>
+                      Supabase is used for database, authentication, and file
+                      storage services. Hosting, analytics, email, and security
+                      providers may receive only the information reasonably needed
+                      to provide their services.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>How information is used</h3>
+                    <p>
+                      Information is used to complete purchases, deliver files,
+                      maintain order history, prevent abuse, provide support, and
+                      improve site reliability. YE2K does not sell personal
+                      information.
+                    </p>
+                  </section>
+                  <section>
+                    <h3>Requests</h3>
+                    <p>
+                      You may request access, correction, or deletion of eligible
+                      personal information by contacting the support email shown
+                      on the site. Certain transaction records may be retained for
+                      legal, accounting, or fraud-prevention purposes.
+                    </p>
+                  </section>
+                </>
+              )}
+            </div>
+
+            <div className="legal-modal-footer">
+              <button type="button" onClick={() => setLegalModal(null)}>
+                Close
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <div
         className={`cart-overlay ${cartOpen ? "is-open" : ""}`}
