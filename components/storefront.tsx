@@ -306,6 +306,302 @@ function WaveformCanvas({
 
 type LegalModal = "terms" | "privacy" | null;
 
+
+type GlobePoint = {
+  city: string;
+  country: string;
+  lat: number;
+  lon: number;
+};
+
+const globeCities: GlobePoint[] = [
+  { city: "NEW YORK", country: "USA", lat: 40.7128, lon: -74.006 },
+  { city: "LOS ANGELES", country: "USA", lat: 34.0522, lon: -118.2437 },
+  { city: "LONDON", country: "UK", lat: 51.5072, lon: -0.1276 },
+  { city: "PARIS", country: "FRANCE", lat: 48.8566, lon: 2.3522 },
+  { city: "LAGOS", country: "NIGERIA", lat: 6.5244, lon: 3.3792 },
+  { city: "JOHANNESBURG", country: "SOUTH AFRICA", lat: -26.2041, lon: 28.0473 },
+  { city: "TOKYO", country: "JAPAN", lat: 35.6762, lon: 139.6503 },
+  { city: "SEOUL", country: "SOUTH KOREA", lat: 37.5665, lon: 126.978 },
+  { city: "SYDNEY", country: "AUSTRALIA", lat: -33.8688, lon: 151.2093 },
+  { city: "SÃO PAULO", country: "BRAZIL", lat: -23.5505, lon: -46.6333 }
+];
+
+const continentLines: Array<Array<[number, number]>> = [
+  [
+    [-168, 66], [-150, 70], [-132, 58], [-126, 49], [-117, 32], [-102, 20],
+    [-86, 18], [-82, 25], [-75, 35], [-66, 45], [-60, 53], [-78, 62],
+    [-105, 72], [-138, 72], [-168, 66]
+  ],
+  [
+    [-81, 12], [-72, 5], [-67, -6], [-60, -16], [-54, -27], [-58, -39],
+    [-68, -54], [-76, -44], [-79, -25], [-81, 12]
+  ],
+  [
+    [-10, 36], [0, 44], [14, 47], [29, 42], [39, 31], [33, 18], [43, 11],
+    [50, 2], [43, -12], [34, -28], [18, -35], [6, -31], [-5, -12],
+    [-17, 13], [-10, 36]
+  ],
+  [
+    [-11, 36], [-8, 51], [5, 58], [20, 69], [40, 70], [59, 62], [72, 54],
+    [92, 52], [114, 48], [135, 53], [154, 61], [169, 54], [160, 41],
+    [143, 34], [124, 21], [109, 8], [92, 7], [79, 20], [67, 24], [55, 34],
+    [39, 42], [22, 40], [10, 36], [-11, 36]
+  ],
+  [
+    [112, -11], [126, -14], [139, -20], [153, -28], [148, -39], [132, -44],
+    [116, -35], [112, -11]
+  ],
+  [
+    [-52, 82], [-28, 76], [-20, 66], [-38, 60], [-56, 68], [-52, 82]
+  ]
+];
+
+function InteractiveWorld() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rotationRef = useRef(-18);
+  const draggingRef = useRef(false);
+  const lastPointerXRef = useRef(0);
+  const resumeAtRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let animationFrame = 0;
+    let previousTime = performance.now();
+
+    const project = (
+      lon: number,
+      lat: number,
+      radius: number,
+      centerX: number,
+      centerY: number
+    ) => {
+      const lambda = ((lon + rotationRef.current) * Math.PI) / 180;
+      const phi = (lat * Math.PI) / 180;
+      const visibility = Math.cos(phi) * Math.cos(lambda);
+
+      return {
+        x: centerX + radius * Math.cos(phi) * Math.sin(lambda),
+        y: centerY - radius * Math.sin(phi),
+        visible: visibility > 0
+      };
+    };
+
+    const draw = (now: number) => {
+      const rect = canvas.getBoundingClientRect();
+      const pixelRatio = window.devicePixelRatio || 1;
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+
+      canvas.width = Math.floor(width * pixelRatio);
+      canvas.height = Math.floor(height * pixelRatio);
+
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context.clearRect(0, 0, width, height);
+
+      const radius = Math.min(width * 0.42, height * 0.43);
+      const centerX = width / 2;
+      const centerY = height * 0.47;
+
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      if (
+        !reducedMotion &&
+        !draggingRef.current &&
+        now > resumeAtRef.current
+      ) {
+        const elapsed = Math.min(40, now - previousTime);
+        rotationRef.current =
+          (rotationRef.current + elapsed * 0.0022) % 360;
+      }
+
+      previousTime = now;
+
+      context.save();
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.clip();
+
+      context.strokeStyle = "#d0d0d0";
+      context.lineWidth = 0.8;
+
+      for (let lat = -60; lat <= 60; lat += 20) {
+        context.beginPath();
+        let drawing = false;
+
+        for (let lon = -180; lon <= 180; lon += 3) {
+          const point = project(lon, lat, radius, centerX, centerY);
+
+          if (!point.visible) {
+            drawing = false;
+            continue;
+          }
+
+          if (!drawing) {
+            context.moveTo(point.x, point.y);
+            drawing = true;
+          } else {
+            context.lineTo(point.x, point.y);
+          }
+        }
+
+        context.stroke();
+      }
+
+      for (let lon = -180; lon < 180; lon += 20) {
+        context.beginPath();
+        let drawing = false;
+
+        for (let lat = -90; lat <= 90; lat += 2) {
+          const point = project(lon, lat, radius, centerX, centerY);
+
+          if (!point.visible) {
+            drawing = false;
+            continue;
+          }
+
+          if (!drawing) {
+            context.moveTo(point.x, point.y);
+            drawing = true;
+          } else {
+            context.lineTo(point.x, point.y);
+          }
+        }
+
+        context.stroke();
+      }
+
+      context.strokeStyle = "#111111";
+      context.lineWidth = 1.1;
+
+      continentLines.forEach((line) => {
+        context.beginPath();
+        let drawing = false;
+
+        line.forEach(([lon, lat]) => {
+          const point = project(lon, lat, radius, centerX, centerY);
+
+          if (!point.visible) {
+            drawing = false;
+            return;
+          }
+
+          if (!drawing) {
+            context.moveTo(point.x, point.y);
+            drawing = true;
+          } else {
+            context.lineTo(point.x, point.y);
+          }
+        });
+
+        context.stroke();
+      });
+
+      context.restore();
+
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.strokeStyle = "#111111";
+      context.lineWidth = 1.25;
+      context.stroke();
+
+      const visibleCities = globeCities
+        .map((city) => ({
+          city,
+          point: project(
+            city.lon,
+            city.lat,
+            radius,
+            centerX,
+            centerY
+          )
+        }))
+        .filter(({ point }) => point.visible)
+        .sort((a, b) => a.point.y - b.point.y)
+        .slice(0, width < 520 ? 4 : 6);
+
+      visibleCities.forEach(({ city, point }, index) => {
+        const alignRight = point.x > centerX;
+        const labelX = point.x + (alignRight ? 10 : -10);
+        const labelY = point.y + (index % 2 === 0 ? -4 : 10);
+
+        context.beginPath();
+        context.arc(point.x, point.y, 4, 0, Math.PI * 2);
+        context.fillStyle = "#000000";
+        context.fill();
+
+        context.textAlign = alignRight ? "left" : "right";
+        context.fillStyle = "#000000";
+        context.font = "800 11px Arial, sans-serif";
+        context.fillText(city.city, labelX, labelY);
+        context.fillStyle = "#555555";
+        context.font = "600 9px Arial, sans-serif";
+        context.fillText(city.country, labelX, labelY + 12);
+      });
+
+      context.fillStyle = "rgba(0,0,0,.08)";
+      context.beginPath();
+      context.ellipse(
+        centerX,
+        centerY + radius + 16,
+        radius * 0.62,
+        8,
+        0,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
+
+      animationFrame = window.requestAnimationFrame(draw);
+    };
+
+    animationFrame = window.requestAnimationFrame(draw);
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, []);
+
+  return (
+    <div className="interactive-world">
+      <canvas
+        ref={canvasRef}
+        aria-label="Interactive world map. Drag to rotate."
+        onPointerDown={(event) => {
+          draggingRef.current = true;
+          lastPointerXRef.current = event.clientX;
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (!draggingRef.current) return;
+
+          const delta = event.clientX - lastPointerXRef.current;
+          rotationRef.current += delta * 0.35;
+          lastPointerXRef.current = event.clientX;
+        }}
+        onPointerUp={(event) => {
+          draggingRef.current = false;
+          resumeAtRef.current = performance.now() + 2500;
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onPointerCancel={() => {
+          draggingRef.current = false;
+          resumeAtRef.current = performance.now() + 2500;
+        }}
+      />
+      <p className="world-instruction">
+        <span aria-hidden="true">↔</span>
+        Drag to rotate
+      </p>
+    </div>
+  );
+}
+
 export default function Storefront() {
   const supabase = useMemo(() => createBrowserClient(), []);
   const { items, add, remove, has, total } = useCart();
@@ -714,7 +1010,10 @@ export default function Storefront() {
       </header>
 
       {loading ? (
-        <section className="hero hero-clean hero-loading" aria-label="Loading website content">
+        <section
+          className="hero hero-clean hero-loading"
+          aria-label="Loading website content"
+        >
           <div className="hero-loading-content" aria-hidden="true">
             <span />
             <i />
@@ -723,39 +1022,39 @@ export default function Storefront() {
           </div>
         </section>
       ) : (
-        <section className="hero hero-clean">
-          <div>
+        <section className="hero hero-clean hero-world">
+          <div className="hero-statement">
             <p className="eyebrow">{settings.eyebrow}</p>
             <h1>
-              {settings.headline_primary}
-              <br />
+              <span>{settings.headline_primary}</span>
               <em>{settings.headline_accent}</em>
             </h1>
+            <span className="hero-period" aria-hidden="true" />
             <p className="hero-copy">{settings.description}</p>
           </div>
+
+          <InteractiveWorld />
         </section>
       )}
 
       <section className="samples-shell" id="beats">
-        <div className="samples-header">
-          <div>
-            <p className="eyebrow">YE2K CATALOG</p>
-            <h2>Latest releases</h2>
+        <div className="catalog-toolbar">
+          <div className="catalog-tabs" aria-label="Beat catalogue">
+            <strong>All beats</strong>
+            <span>New</span>
           </div>
 
-          <div className="samples-tools">
-            <input
-              aria-label="Search beats"
-              placeholder="Search beats…"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <button
-              className="mini-cart cart-trigger"
-              onClick={() => setCartOpen(true)}
-            >
-              Cart <b>{items.length}</b>
-            </button>
+          <div className="catalog-search">
+            <label>
+              <span className="sr-only">Search beats</span>
+              <input
+                aria-label="Search beats"
+                placeholder="Search beats"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+            <span>Newest</span>
           </div>
         </div>
 
