@@ -724,7 +724,14 @@ export default function AdminPage() {
               beats.map((beat) => (
                 <article key={beat.id} className="admin-item">
                   <div>
-                    <strong>{beat.title}</strong>
+                    <strong>
+                      {beat.title}
+                      {beat.catalog_code && (
+                        <small className="admin-catalog-code">
+                          {beat.catalog_code}
+                        </small>
+                      )}
+                    </strong>
                     <span>{beat.producer} · ${Number(beat.price).toFixed(2)}</span>
                   </div>
                   <div className="admin-item-actions">
