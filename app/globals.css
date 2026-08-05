@@ -2963,3 +2963,47 @@ body.workspace-open{overflow:hidden}
     padding-right:10px;
   }
 }
+
+/* Optional hero globe */
+.hero-world.hero-world-disabled{
+  grid-template-columns:minmax(0,1fr);
+  min-height:540px;
+  padding-right:clamp(32px,7vw,120px);
+}
+
+.hero-world.hero-world-disabled .hero-statement{
+  width:100%;
+  max-width:1380px;
+}
+
+.hero-world.hero-world-disabled .hero-statement h1{
+  max-width:1280px;
+  font-size:clamp(78px,10.5vw,180px);
+}
+
+.hero-world.hero-world-disabled .hero-statement .hero-copy{
+  max-width:760px;
+}
+
+@media(max-width:1100px){
+  .hero-world.hero-world-disabled{
+    min-height:0;
+    padding-right:32px;
+  }
+
+  .hero-world.hero-world-disabled .hero-statement h1{
+    max-width:900px;
+    font-size:clamp(58px,11vw,112px);
+  }
+}
+
+@media(max-width:620px){
+  .hero-world.hero-world-disabled{
+    gap:0;
+    padding-right:18px;
+  }
+
+  .hero-world.hero-world-disabled .hero-statement h1{
+    font-size:clamp(46px,16.5vw,76px);
+  }
+}
