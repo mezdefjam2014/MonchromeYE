@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     const { data: beats, error: beatsError } = await supabase
       .from("beats")
-      .select("id,title,price,status,mp3_path,wav_path,site_id")
+      .select("id,title,price,status,mp3_path,wav_path,site_id,release_at")
       .in("id", uniqueBeatIds)
       .eq("site_id", site.id)
       .eq("status", "published");
@@ -70,6 +70,20 @@ export async function POST(request: Request) {
     if (!beats || beats.length !== uniqueBeatIds.length) {
       return NextResponse.json(
         { error: "One or more beats are no longer available." },
+        { status: 400 }
+      );
+    }
+
+    const currentTime = Date.now();
+    const unreleasedBeat = beats.find(
+      (beat) =>
+        beat.release_at &&
+        new Date(beat.release_at).getTime() > currentTime
+    );
+
+    if (unreleasedBeat) {
+      return NextResponse.json(
+        { error: "One or more beats have not been released yet." },
         { status: 400 }
       );
     }
