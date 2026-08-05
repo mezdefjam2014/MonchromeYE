@@ -783,7 +783,13 @@ function InteractiveWorld() {
 }
 
 
-export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string }) {
+export default function Storefront({
+  siteSlug = "ye2k",
+  focusBeatCode
+}: {
+  siteSlug?: string;
+  focusBeatCode?: string;
+}) {
   const supabase = useMemo(() => createBrowserClient(), []);
   const { items, add, remove, has, total } = useCart();
 
@@ -891,7 +897,7 @@ export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string })
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [query]);
+  }, [query, focusBeatCode]);
 
   useEffect(() => {
     const overlayOpen = cartOpen || legalModal !== null;
@@ -912,15 +918,23 @@ export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string })
     };
   }, [cartOpen, legalModal]);
 
-  const filteredBeats = useMemo(
-    () =>
-      beats.filter((beat) =>
-        `${beat.title} ${beat.producer}`
-          .toLowerCase()
-          .includes(query.toLowerCase())
-      ),
-    [beats, query]
-  );
+  const filteredBeats = useMemo(() => {
+    const normalizedFocus = focusBeatCode?.trim().toLowerCase();
+
+    if (normalizedFocus) {
+      return beats.filter((beat) => {
+        const code = beat.catalog_code?.toLowerCase();
+        const slug = beat.slug?.toLowerCase();
+        return code === normalizedFocus || slug === normalizedFocus;
+      });
+    }
+
+    return beats.filter((beat) =>
+      `${beat.title} ${beat.producer}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+    );
+  }, [beats, focusBeatCode, query]);
 
   const visibleBeats = filteredBeats.slice(0, visibleCount);
 
@@ -947,6 +961,14 @@ export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string })
     path
       ? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
       : "";
+
+  const storefrontBasePath =
+    siteSlug === "ye2k" ? "" : `/s/${encodeURIComponent(siteSlug)}`;
+
+  const beatHref = (beat: Beat) => {
+    const identifier = (beat.catalog_code || beat.slug).toLowerCase();
+    return `${storefrontBasePath}/beats/${encodeURIComponent(identifier)}`;
+  };
 
   const globalCoverPath =
     settings.settings?.media?.globalCoverPath || "";
@@ -1288,22 +1310,32 @@ export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string })
       <section className="samples-shell" id="beats">
         <div className="catalog-toolbar">
           <div className="catalog-tabs" aria-label="Beat catalogue">
-            <strong>All beats</strong>
-            <span>New</span>
+            {focusBeatCode ? (
+              <Link className="beat-back-link" href={storefrontBasePath || "/"}>
+                ← All beats
+              </Link>
+            ) : (
+              <>
+                <strong>All beats</strong>
+                <span>New</span>
+              </>
+            )}
           </div>
 
-          <div className="catalog-search">
-            <label>
-              <span className="sr-only">Search beats</span>
-              <input
-                aria-label="Search beats"
-                placeholder="Search beats"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
-            <span>Newest</span>
-          </div>
+          {!focusBeatCode && (
+            <div className="catalog-search">
+              <label>
+                <span className="sr-only">Search beats</span>
+                <input
+                  aria-label="Search beats"
+                  placeholder="Search beats"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <span>Newest</span>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -1323,7 +1355,9 @@ export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string })
             <h3>
               {beats.length === 0
                 ? "No beats available yet."
-                : "No beats match your search."}
+                : focusBeatCode
+                  ? "This beat is unavailable or has not been published."
+                  : "No beats match your search."}
             </h3>
           </div>
         ) : (
@@ -1372,12 +1406,18 @@ export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string })
 
                     <div className="sample-info">
                       <h3>
-                        {beat.title}
-                        {beat.catalog_code && (
-                          <small className="catalog-code">
-                            {beat.catalog_code}
-                          </small>
-                        )}
+                        <Link
+                          className="beat-title-link"
+                          href={beatHref(beat)}
+                          aria-label={`Open ${beat.title}`}
+                        >
+                          <span>{beat.title}</span>
+                          {beat.catalog_code && (
+                            <small className="catalog-code">
+                              {beat.catalog_code}
+                            </small>
+                          )}
+                        </Link>
                       </h3>
                       <p>{beat.producer}</p>
                       <div className="sample-meta">
