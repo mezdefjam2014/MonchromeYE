@@ -3047,3 +3047,70 @@ body.workspace-open{overflow:hidden}
     width:100%;
   }
 }
+
+/* Back office organization and overlap prevention */
+html{scroll-behavior:smooth}
+.admin-shell{width:min(100%,1500px);padding:24px clamp(16px,3vw,36px) 64px;overflow-x:hidden}
+.admin-shell *,.admin-shell *::before,.admin-shell *::after{box-sizing:border-box;min-width:0}
+.admin-topbar{position:relative;z-index:30;gap:20px;padding:12px 0 22px}
+.admin-section-nav{position:sticky;top:0;z-index:40;display:flex;gap:8px;margin:0 0 22px;padding:10px;overflow-x:auto;border:1px solid #d8d8d8;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);scrollbar-width:none}
+.admin-section-nav::-webkit-scrollbar{display:none}
+.admin-section-nav a{flex:0 0 auto;min-height:40px;display:flex;align-items:center;justify-content:center;padding:0 16px;border:1px solid #d8d8d8;background:#fff;color:#000;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.admin-section-nav a:hover,.admin-section-nav a:focus-visible{background:#000;color:#fff;outline:none}
+.admin-anchor-section{scroll-margin-top:82px}
+.admin-panel{overflow:hidden;border:1px solid #d7d7d7;box-shadow:none}
+.settings-heading{align-items:flex-start}
+.settings-heading>div,.settings-heading>p{min-width:0}
+.settings-heading>p{max-width:520px;overflow-wrap:anywhere}
+.site-manager-actions{grid-template-columns:minmax(220px,1fr) minmax(170px,auto) minmax(150px,auto)}
+.site-manager-actions>*{min-width:0}
+.site-manager-actions .primary-btn,.site-manager-actions .site-preview-link{min-height:46px;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal}
+.homepage-settings-panel .admin-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.homepage-settings-panel .admin-form>.form-grid,.homepage-settings-panel .admin-form>.branding-settings,.homepage-settings-panel .admin-form>.about-settings,.homepage-settings-panel .admin-form>.settings-save-btn{grid-column:1/-1}
+.settings-subsection{height:100%;margin:0;padding:22px;border:1px solid #dedede;background:#fafafa}
+.settings-subsection>div:first-child{margin-bottom:16px}
+.settings-subsection h3,.settings-help,.settings-current-file,.settings-toggle small,.settings-upload-field small{overflow-wrap:anywhere;word-break:break-word}
+.settings-current-file{padding:10px 12px;border:1px solid #e2e2e2;background:#fff;font-size:12px;line-height:1.45}
+.settings-toggle{width:100%;align-items:flex-start}
+.settings-toggle span{min-width:0}
+.settings-toggle input{flex:0 0 auto}
+.form-grid,.upload-grid,.branding-meta-grid,.creative-toggle-grid{gap:14px}
+.admin-form input,.admin-form textarea,.admin-form select,.site-manager-actions select{width:100%;max-width:100%}
+.admin-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:22px;align-items:start}
+.upload-panel,.catalog-panel{min-width:0}
+.catalog-panel{position:sticky;top:84px;max-height:calc(100vh - 108px);overflow:auto}
+.admin-list{display:grid;gap:10px}
+.admin-item{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:16px}
+.admin-item>div:first-child{min-width:0}
+.admin-item strong,.admin-item span{overflow-wrap:anywhere}
+.admin-item-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.admin-item-actions button{width:100%;min-width:0;white-space:normal}
+.admin-catalog-code{display:inline-flex;margin-left:8px;vertical-align:middle}
+.admin-form-actions{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:1050px){
+  .site-manager-actions{grid-template-columns:1fr 1fr}
+  .site-manager-actions label{grid-column:1/-1}
+  .admin-grid{grid-template-columns:1fr}
+  .catalog-panel{position:static;max-height:none}
+}
+@media(max-width:820px){
+  .homepage-settings-panel .admin-form{grid-template-columns:1fr}
+  .homepage-settings-panel .admin-form>*{grid-column:1!important}
+  .settings-heading{flex-direction:column;gap:10px}
+  .settings-heading>p{max-width:none}
+  .form-grid,.upload-grid,.branding-meta-grid,.creative-toggle-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .admin-shell{padding:12px 12px 48px}
+  .admin-topbar{align-items:flex-start}
+  .admin-topbar .ghost-btn{flex:0 0 auto}
+  .admin-section-nav{margin-left:-12px;margin-right:-12px;border-left:0;border-right:0;padding-left:12px;padding-right:12px}
+  .admin-panel{padding:18px 14px}
+  .settings-subsection{padding:16px 14px}
+  .site-manager-actions{grid-template-columns:1fr}
+  .site-manager-actions label{grid-column:auto}
+  .site-manager-actions .primary-btn,.site-manager-actions .site-preview-link{width:100%}
+  .admin-item-actions{grid-template-columns:1fr}
+  .admin-form-actions{flex-direction:column}
+  .admin-form-actions button{width:100%}
+}
