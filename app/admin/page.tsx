@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserClient } from "@/lib/supabase/browser";
 import type { Beat, Site, SiteSettings } from "@/lib/types";
 
@@ -13,6 +13,167 @@ type FormState = {
   releaseTime: string;
   releaseMeridiem: "AM" | "PM";
 };
+
+
+type DropFileFieldProps = {
+  label: string;
+  helper: string;
+  accept: string;
+  file: File | null;
+  onFile: (file: File | null) => void;
+  required?: boolean;
+};
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function DropFileField({
+  label,
+  helper,
+  accept,
+  file,
+  onFile,
+  required = false
+}: DropFileFieldProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [fileError, setFileError] = useState("");
+
+  const acceptedTypes = accept
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+
+  function acceptsFile(candidate: File) {
+    const mime = candidate.type.toLowerCase();
+    const extension = `.${candidate.name.split(".").pop()?.toLowerCase() || ""}`;
+
+    return acceptedTypes.some((accepted) => {
+      if (accepted.startsWith(".")) return accepted === extension;
+      if (accepted.endsWith("/*")) {
+        return mime.startsWith(accepted.slice(0, -1));
+      }
+      return accepted === mime;
+    });
+  }
+
+  function chooseFile(candidate: File | null) {
+    setFileError("");
+
+    if (!candidate) {
+      onFile(null);
+      return;
+    }
+
+    if (!acceptsFile(candidate)) {
+      setFileError(`Choose a valid ${label.toLowerCase()} file.`);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
+    onFile(candidate);
+  }
+
+  return (
+    <div className="drop-file-field">
+      <div className="drop-file-heading">
+        <strong>
+          {label}
+          {required && <span aria-hidden="true"> *</span>}
+        </strong>
+        <small>{helper}</small>
+      </div>
+
+      <div
+        className={`drop-file-zone ${dragging ? "is-dragging" : ""} ${
+          file ? "has-file" : ""
+        }`}
+        role="button"
+        tabIndex={0}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+          setDragging(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setDragging(false);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          chooseFile(event.dataTransfer.files?.[0] || null);
+        }}
+      >
+        <input
+          ref={inputRef}
+          className="drop-file-input"
+          type="file"
+          accept={accept}
+          onChange={(event) => chooseFile(event.target.files?.[0] || null)}
+        />
+
+        {file ? (
+          <div className="drop-file-selected">
+            <span className="drop-file-icon" aria-hidden="true">
+              ✓
+            </span>
+            <span className="drop-file-details">
+              <b>{file.name}</b>
+              <small>{formatFileSize(file.size)}</small>
+            </span>
+            <button
+              type="button"
+              className="drop-file-remove"
+              onClick={(event) => {
+                event.stopPropagation();
+                onFile(null);
+                setFileError("");
+                if (inputRef.current) inputRef.current.value = "";
+              }}
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <div className="drop-file-empty">
+            <span className="drop-file-upload-icon" aria-hidden="true">
+              ↑
+            </span>
+            <span>
+              <b>Drop file here</b>
+              <small>or click to browse</small>
+            </span>
+          </div>
+        )}
+      </div>
+
+      {fileError && (
+        <small className="drop-file-error" role="alert">
+          {fileError}
+        </small>
+      )}
+    </div>
+  );
+}
 
 const initial: FormState = {
   title: "",
@@ -1622,52 +1783,59 @@ export default function AdminPage() {
               </label>
             </div>
 
-            <div className="upload-grid" key={fileInputKey}>
-              <label>
-                Artwork
-                <small>
-                  {editingBeat
-                    ? "Leave empty to keep the current file"
+            <div className="upload-grid drag-upload-grid" key={fileInputKey}>
+              <DropFileField
+                label="Artwork"
+                helper={
+                  editingBeat
+                    ? "Optional — leave empty to keep the current artwork"
                     : siteSettings.settings?.media?.globalCoverPath
-                      ? "Optional — the global artwork will be used automatically"
-                      : "Required until a global beat image is set"}
-                </small>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(event) => setCover(event.target.files?.[0] || null)}
-                  required={!editingBeat && !siteSettings.settings?.media?.globalCoverPath}
-                />
-              </label>
+                      ? "Optional — global artwork is used automatically"
+                      : "Required until a global artwork is set"
+                }
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                file={cover}
+                onFile={setCover}
+                required={!editingBeat && !siteSettings.settings?.media?.globalCoverPath}
+              />
 
-              <label>
-                Preview MP3 {editingBeat && <small>Leave empty to keep current file</small>}
-                <input
-                  type="file"
-                  accept="audio/mpeg"
-                  onChange={(event) => setPreview(event.target.files?.[0] || null)}
-                  required={!editingBeat}
-                />
-              </label>
+              <DropFileField
+                label="Preview MP3"
+                helper={
+                  editingBeat
+                    ? "Leave empty to keep the current preview"
+                    : "Required — public preview used by the waveform player"
+                }
+                accept="audio/mpeg,audio/mp3,.mp3"
+                file={preview}
+                onFile={setPreview}
+                required={!editingBeat}
+              />
 
-              <label>
-                Full MP3 {editingBeat && <small>Leave empty to keep current file</small>}
-                <input
-                  type="file"
-                  accept="audio/mpeg"
-                  onChange={(event) => setMp3(event.target.files?.[0] || null)}
-                  required={!editingBeat}
-                />
-              </label>
+              <DropFileField
+                label="Full MP3"
+                helper={
+                  editingBeat
+                    ? "Leave empty to keep the current full MP3"
+                    : "Required — private customer download"
+                }
+                accept="audio/mpeg,audio/mp3,.mp3"
+                file={mp3}
+                onFile={setMp3}
+                required={!editingBeat}
+              />
 
-              <label>
-                WAV {editingBeat && <small>Upload only to add or replace WAV</small>}
-                <input
-                  type="file"
-                  accept="audio/wav,audio/x-wav"
-                  onChange={(event) => setWav(event.target.files?.[0] || null)}
-                />
-              </label>
+              <DropFileField
+                label="WAV"
+                helper={
+                  editingBeat
+                    ? "Optional — upload only to add or replace WAV"
+                    : "Optional — private customer download"
+                }
+                accept="audio/wav,audio/x-wav,audio/wave,.wav"
+                file={wav}
+                onFile={setWav}
+              />
             </div>
 
             <div className="admin-form-actions">
