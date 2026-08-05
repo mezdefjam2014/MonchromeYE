@@ -3007,3 +3007,43 @@ body.workspace-open{overflow:hidden}
     font-size:clamp(46px,16.5vw,76px);
   }
 }
+
+/* Multi-storefront admin */
+.site-manager-panel{
+  margin-bottom:18px;
+}
+.site-manager-actions{
+  display:grid;
+  grid-template-columns:minmax(240px,1fr) auto auto;
+  gap:12px;
+  align-items:end;
+}
+.site-manager-actions label{
+  display:grid;
+  gap:8px;
+  font-weight:800;
+}
+.site-manager-actions select{
+  width:100%;
+  min-height:46px;
+}
+.site-preview-link{
+  min-height:46px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+}
+.branding-meta-grid{
+  margin-top:18px;
+}
+
+@media(max-width:760px){
+  .site-manager-actions{
+    grid-template-columns:1fr;
+  }
+  .site-manager-actions .primary-btn,
+  .site-manager-actions .site-preview-link{
+    width:100%;
+  }
+}
