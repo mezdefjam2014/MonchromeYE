@@ -45,6 +45,9 @@ export type SiteSettings = {
       autoSaveEnabled?: boolean;
       txtDownloadEnabled?: boolean;
     };
+    hero?: {
+      globeVisible?: boolean;
+    };
     [key: string]: unknown;
   };
   updated_at: string;
