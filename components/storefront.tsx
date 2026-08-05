@@ -47,6 +47,9 @@ const defaultSettings: SiteSettings = {
       lyricsEnabled: true,
       autoSaveEnabled: true,
       txtDownloadEnabled: true
+    },
+    hero: {
+      globeVisible: true
     }
   },
   updated_at: ""
@@ -813,6 +816,7 @@ export default function Storefront() {
   const footerLogoText =
     settings.settings?.branding?.footerLogoText?.trim() || "YE2K";
   const aboutVisible = settings.settings?.about?.visible !== false;
+  const globeVisible = settings.settings?.hero?.globeVisible !== false;
   const announcement = settings.settings?.announcement;
   const creativeSettings = settings.settings?.creative;
   const workspaceEnabled = creativeSettings?.workspaceEnabled === true;
@@ -1112,7 +1116,11 @@ export default function Storefront() {
           </div>
         </section>
       ) : (
-        <section className="hero hero-clean hero-world">
+        <section
+          className={`hero hero-clean ${
+            globeVisible ? "hero-world" : "hero-world hero-world-disabled"
+          }`}
+        >
           <div className="hero-statement">
             <p className="eyebrow">{settings.eyebrow}</p>
             <h1>
@@ -1123,7 +1131,7 @@ export default function Storefront() {
             <p className="hero-copy">{settings.description}</p>
           </div>
 
-          <InteractiveWorld />
+          {globeVisible && <InteractiveWorld />}
         </section>
       )}
 
