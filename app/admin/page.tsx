@@ -668,7 +668,14 @@ export default function AdminPage() {
         <button className="ghost-btn" onClick={signOut}>Sign out</button>
       </header>
 
-      <section className="admin-panel site-manager-panel">
+      <nav className="admin-section-nav" aria-label="Back office sections">
+        <a href="#admin-storefronts">Storefronts</a>
+        <a href="#admin-website">Website</a>
+        <a href="#admin-upload">Upload</a>
+        <a href="#admin-catalog">Catalog</a>
+      </nav>
+
+      <section id="admin-storefronts" className="admin-panel site-manager-panel admin-anchor-section">
         <div className="settings-heading">
           <div>
             <p className="eyebrow">STOREFRONTS</p>
@@ -714,7 +721,7 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section className="admin-panel homepage-settings-panel">
+      <section id="admin-website" className="admin-panel homepage-settings-panel admin-anchor-section">
         <div className="settings-heading">
           <div>
             <p className="eyebrow">HOMEPAGE SETTINGS</p>
@@ -771,7 +778,7 @@ export default function AdminPage() {
             </label>
           </div>
 
-          <div className="settings-subsection">
+          <div className="settings-subsection branding-settings">
             <div>
               <p className="eyebrow">BRANDING</p>
               <h3>Logo text</h3>
@@ -900,7 +907,7 @@ export default function AdminPage() {
             )}
           </div>
 
-          <div className="settings-subsection">
+          <div className="settings-subsection global-artwork-settings">
             <div>
               <p className="eyebrow">GLOBAL BEAT IMAGE</p>
               <h3>Use one image for every beat</h3>
@@ -927,7 +934,7 @@ export default function AdminPage() {
             )}
           </div>
 
-          <div className="settings-subsection">
+          <div className="settings-subsection announcement-settings">
             <div>
               <p className="eyebrow">ANNOUNCEMENT</p>
               <h3>Drop-style announcement</h3>
@@ -1022,7 +1029,7 @@ export default function AdminPage() {
             </label>
           </div>
 
-          <div className="settings-subsection">
+          <div className="settings-subsection creative-settings">
             <div>
               <p className="eyebrow">CREATIVE WORKSPACE</p>
               <h3>Optional writing mode</h3>
@@ -1123,7 +1130,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="settings-subsection">
+          <div className="settings-subsection hero-settings">
             <div>
               <p className="eyebrow">HERO WORLD</p>
               <h3>Interactive globe</h3>
@@ -1155,7 +1162,7 @@ export default function AdminPage() {
             </label>
           </div>
 
-          <div className="settings-subsection">
+          <div className="settings-subsection about-settings">
             <div>
               <p className="eyebrow">ABOUT SECTION</p>
               <h3>Edit the About content</h3>
@@ -1254,7 +1261,7 @@ export default function AdminPage() {
       </section>
 
       <div className="admin-grid">
-        <section className="admin-panel">
+        <section id="admin-upload" className="admin-panel upload-panel admin-anchor-section">
           <p className="eyebrow">{editingBeat ? "EDIT RELEASE" : "NEW RELEASE"}</p>
           <h1>{editingBeat ? `Edit ${editingBeat.title}` : "Upload a beat"}</h1>
 
@@ -1367,7 +1374,7 @@ export default function AdminPage() {
           {message && <p className="form-message">{message}</p>}
         </section>
 
-        <aside className="admin-panel">
+        <aside id="admin-catalog" className="admin-panel catalog-panel admin-anchor-section">
           <p className="eyebrow">CATALOG</p>
           <h2>{beats.length} beats</h2>
           <div className="admin-list">
