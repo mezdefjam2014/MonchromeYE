@@ -50,6 +50,9 @@ const defaultSiteSettings: SiteSettings = {
       lyricsEnabled: true,
       autoSaveEnabled: true,
       txtDownloadEnabled: true
+    },
+    hero: {
+      globeVisible: true
     }
   },
   updated_at: ""
@@ -148,6 +151,10 @@ export default function AdminPage() {
             siteSettings.settings?.creative?.autoSaveEnabled !== false,
           txtDownloadEnabled:
             siteSettings.settings?.creative?.txtDownloadEnabled !== false
+        },
+        hero: {
+          globeVisible:
+            siteSettings.settings?.hero?.globeVisible !== false
         }
       };
 
@@ -791,6 +798,38 @@ export default function AdminPage() {
                 </span>
               </label>
             </div>
+          </div>
+
+          <div className="settings-subsection">
+            <div>
+              <p className="eyebrow">HERO WORLD</p>
+              <h3>Interactive globe</h3>
+            </div>
+
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={siteSettings.settings?.hero?.globeVisible !== false}
+                onChange={(event) =>
+                  setSiteSettings({
+                    ...siteSettings,
+                    settings: {
+                      ...(siteSettings.settings || {}),
+                      hero: {
+                        ...(siteSettings.settings?.hero || {}),
+                        globeVisible: event.target.checked
+                      }
+                    }
+                  })
+                }
+              />
+              <span>
+                <strong>Show interactive globe</strong>
+                <small>
+                  Turn this off to use a full-width headline without leaving an empty gap.
+                </small>
+              </span>
+            </label>
           </div>
 
           <div className="settings-subsection">
