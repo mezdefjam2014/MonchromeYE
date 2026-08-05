@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@/lib/supabase/browser";
-import type { Beat, SiteSettings } from "@/lib/types";
+import type { Beat, Site, SiteSettings } from "@/lib/types";
 
 type FormState = {
   title: string;
@@ -31,7 +31,11 @@ const defaultSiteSettings: SiteSettings = {
     },
     branding: {
       headerLogoText: "YE2K",
-      footerLogoText: "YE2K"
+      footerLogoText: "YE2K",
+      faviconPath: "",
+      shareImagePath: "",
+      siteTitle: "YE2K — Original Production",
+      siteDescription: "Original production. Immediate preview. Secure delivery."
     },
     about: {
       visible: true,
@@ -79,16 +83,167 @@ export default function AdminPage() {
   const [settingsMessage, setSettingsMessage] = useState("");
   const [globalCover, setGlobalCover] = useState<File | null>(null);
   const [settingsFileInputKey, setSettingsFileInputKey] = useState(0);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [activeSite, setActiveSite] = useState<Site | null>(null);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [shareImageFile, setShareImageFile] = useState<File | null>(null);
 
-  async function refresh() {
+  async function refresh(targetSite: Site | null = activeSite) {
+    if (!targetSite) return;
+
     const [beatsResult, settingsResult] = await Promise.all([
-      supabase.from("beats").select("*").order("created_at", { ascending: false }),
-      supabase.from("site_settings").select("*").eq("id", 1).maybeSingle()
+      supabase
+        .from("beats")
+        .select("*")
+        .eq("site_id", targetSite.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("storefront_settings")
+        .select("*")
+        .eq("site_id", targetSite.id)
+        .maybeSingle()
     ]);
 
     if (beatsResult.error) setMessage(beatsResult.error.message);
-    setBeats((beatsResult.data || []) as Beat[]);
-    if (settingsResult.data) setSiteSettings(settingsResult.data as SiteSettings);
+    setBeats(
+      ((beatsResult.data || []) as Beat[]).map((beat) => ({
+        ...beat,
+        site_slug: targetSite.slug
+      }))
+    );
+
+    if (settingsResult.data) {
+      setSiteSettings(settingsResult.data as SiteSettings);
+    } else {
+      setSiteSettings({
+        ...defaultSiteSettings,
+        site_id: targetSite.id,
+        settings: {
+          ...(defaultSiteSettings.settings || {}),
+          branding: {
+            ...(defaultSiteSettings.settings?.branding || {}),
+            headerLogoText: targetSite.name,
+            footerLogoText: targetSite.name
+          }
+        }
+      });
+    }
+  }
+
+  async function loadSites(preferredSiteId?: string) {
+    const { data, error } = await supabase
+      .from("sites")
+      .select("*")
+      .eq("active", true)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    const nextSites = (data || []) as Site[];
+    setSites(nextSites);
+
+    const nextSite =
+      nextSites.find((site) => site.id === preferredSiteId) ||
+      nextSites.find((site) => site.id === activeSite?.id) ||
+      nextSites.find((site) => site.is_default) ||
+      nextSites[0] ||
+      null;
+
+    setActiveSite(nextSite);
+
+    if (nextSite) {
+      await refresh(nextSite);
+    }
+  }
+
+  async function selectSite(siteId: string) {
+    const nextSite = sites.find((site) => site.id === siteId) || null;
+    setActiveSite(nextSite);
+    resetForm();
+
+    if (nextSite) {
+      await refresh(nextSite);
+    }
+  }
+
+  async function duplicateSite() {
+    if (!activeSite) return;
+
+    const name = window.prompt("New site name");
+    if (!name?.trim()) return;
+
+    const suggestedSlug = name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    const slug = window.prompt("New site slug", suggestedSlug)?.trim();
+    if (!slug) return;
+
+    const prefix =
+      window.prompt("Catalog prefix", slug.slice(0, 2).toUpperCase())?.trim().toUpperCase() ||
+      "ST";
+
+    setSettingsBusy(true);
+    setSettingsMessage("");
+
+    try {
+      const { data: site, error: siteError } = await supabase
+        .from("sites")
+        .insert({
+          name: name.trim(),
+          slug,
+          catalog_prefix: prefix.slice(0, 6),
+          is_default: false,
+          active: true
+        })
+        .select()
+        .single();
+
+      if (siteError) throw siteError;
+
+      const duplicatedSettings = {
+        ...siteSettings,
+        id: undefined,
+        site_id: site.id,
+        settings: {
+          ...(siteSettings.settings || {}),
+          branding: {
+            ...(siteSettings.settings?.branding || {}),
+            headerLogoText: name.trim(),
+            footerLogoText: name.trim(),
+            faviconPath: "",
+            shareImagePath: "",
+            siteTitle: `${name.trim()} — Original Production`
+          },
+          media: {
+            ...(siteSettings.settings?.media || {}),
+            globalCoverPath: ""
+          }
+        },
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: settingsError } = await supabase
+        .from("storefront_settings")
+        .insert(duplicatedSettings);
+
+      if (settingsError) throw settingsError;
+
+      setSettingsMessage("New storefront created. Its beats and uploads are separate.");
+      await loadSites(site.id);
+    } catch (error) {
+      setSettingsMessage(
+        error instanceof Error ? error.message : "Could not duplicate storefront."
+      );
+    } finally {
+      setSettingsBusy(false);
+    }
   }
 
   async function saveSiteSettings(event: React.FormEvent) {
@@ -97,17 +252,43 @@ export default function AdminPage() {
     setSettingsMessage("");
 
     try {
+      if (!activeSite) throw new Error("Choose a storefront first.");
+
       let globalCoverPath = siteSettings.settings?.media?.globalCoverPath || "";
+      let faviconPath = siteSettings.settings?.branding?.faviconPath || "";
+      let shareImagePath = siteSettings.settings?.branding?.shareImagePath || "";
 
       if (globalCover) {
         const extension = globalCover.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `site/global-cover.${extension}`;
+        const path = `${activeSite.slug}/site/global-cover.${extension}`;
         const { error: uploadError } = await supabase.storage
           .from("beat-covers")
           .upload(path, globalCover, { upsert: true });
 
         if (uploadError) throw uploadError;
         globalCoverPath = path;
+      }
+
+      if (faviconFile) {
+        const extension = faviconFile.name.split(".").pop()?.toLowerCase() || "png";
+        const path = `${activeSite.slug}/branding/favicon.${extension}`;
+        const { error: uploadError } = await supabase.storage
+          .from("beat-covers")
+          .upload(path, faviconFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+        faviconPath = path;
+      }
+
+      if (shareImageFile) {
+        const extension = shareImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${activeSite.slug}/branding/share-image.${extension}`;
+        const { error: uploadError } = await supabase.storage
+          .from("beat-covers")
+          .upload(path, shareImageFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+        shareImagePath = path;
       }
 
       const settings = {
@@ -118,9 +299,17 @@ export default function AdminPage() {
         },
         branding: {
           headerLogoText:
-            siteSettings.settings?.branding?.headerLogoText?.trim() || "YE2K",
+            siteSettings.settings?.branding?.headerLogoText?.trim() || activeSite.name,
           footerLogoText:
-            siteSettings.settings?.branding?.footerLogoText?.trim() || "YE2K"
+            siteSettings.settings?.branding?.footerLogoText?.trim() || activeSite.name,
+          faviconPath,
+          shareImagePath,
+          siteTitle:
+            siteSettings.settings?.branding?.siteTitle?.trim() ||
+            `${activeSite.name} — Original Production`,
+          siteDescription:
+            siteSettings.settings?.branding?.siteDescription?.trim() ||
+            siteSettings.description.trim()
         },
         about: {
           visible: siteSettings.settings?.about?.visible !== false,
@@ -159,7 +348,7 @@ export default function AdminPage() {
       };
 
       const payload = {
-        id: 1,
+        site_id: activeSite.id,
         eyebrow: siteSettings.eyebrow.trim(),
         headline_primary: siteSettings.headline_primary.trim(),
         headline_accent: siteSettings.headline_accent.trim(),
@@ -169,8 +358,8 @@ export default function AdminPage() {
       };
 
       const { data, error } = await supabase
-        .from("site_settings")
-        .upsert(payload, { onConflict: "id" })
+        .from("storefront_settings")
+        .upsert(payload, { onConflict: "site_id" })
         .select()
         .single();
 
@@ -178,6 +367,8 @@ export default function AdminPage() {
 
       setSiteSettings(data as SiteSettings);
       setGlobalCover(null);
+      setFaviconFile(null);
+      setShareImageFile(null);
       setSettingsFileInputKey((value) => value + 1);
       setSettingsMessage("Website settings updated.");
     } catch (error) {
@@ -191,7 +382,7 @@ export default function AdminPage() {
     supabase.auth.getSession().then(({ data }) => {
       setAuthenticated(Boolean(data.session));
       setSessionReady(true);
-      if (data.session) refresh();
+      if (data.session) loadSites();
     });
   }, [supabase]);
 
@@ -208,15 +399,17 @@ export default function AdminPage() {
     if (error) setMessage(error.message);
     else {
       setAuthenticated(true);
-      await refresh();
+      await loadSites();
     }
 
     setBusy(false);
   }
 
   async function upload(file: File, bucket: string, beatId: string, name: string) {
+    if (!activeSite) throw new Error("Choose a storefront first.");
+
     const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
-    const path = `${beatId}/${name}.${ext}`;
+    const path = `${activeSite.slug}/${beatId}/${name}.${ext}`;
     const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
 
     if (error) throw error;
@@ -266,6 +459,8 @@ export default function AdminPage() {
     setMessage("");
 
     try {
+      if (!activeSite) throw new Error("Choose a storefront first.");
+
       const beatId = editingBeat?.id || crypto.randomUUID();
       const slug = form.title
         .toLowerCase()
@@ -291,6 +486,7 @@ export default function AdminPage() {
       }
 
       const payload = {
+        site_id: activeSite.id,
         title: form.title.trim(),
         slug,
         producer: form.producer.trim(),
@@ -304,7 +500,11 @@ export default function AdminPage() {
       };
 
       const result = editingBeat
-        ? await supabase.from("beats").update(payload).eq("id", beatId)
+        ? await supabase
+            .from("beats")
+            .update(payload)
+            .eq("id", beatId)
+            .eq("site_id", activeSite.id)
         : await supabase.from("beats").insert({ id: beatId, ...payload });
 
       if (result.error) throw result.error;
@@ -324,7 +524,8 @@ export default function AdminPage() {
     const { error } = await supabase
       .from("beats")
       .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", beat.id);
+      .eq("id", beat.id)
+      .eq("site_id", beat.site_id);
 
     if (error) setMessage(error.message);
     else refresh();
@@ -344,7 +545,8 @@ export default function AdminPage() {
       const { error: deleteError } = await supabase
         .from("beats")
         .delete()
-        .eq("id", beat.id);
+        .eq("id", beat.id)
+        .eq("site_id", beat.site_id);
 
       if (deleteError) throw deleteError;
 
@@ -466,6 +668,52 @@ export default function AdminPage() {
         <button className="ghost-btn" onClick={signOut}>Sign out</button>
       </header>
 
+      <section className="admin-panel site-manager-panel">
+        <div className="settings-heading">
+          <div>
+            <p className="eyebrow">STOREFRONTS</p>
+            <h2>{activeSite?.name || "Choose a site"}</h2>
+          </div>
+          <p>Each storefront has separate settings, beats, and upload folders. Stripe remains shared.</p>
+        </div>
+
+        <div className="site-manager-actions">
+          <label>
+            Managing storefront
+            <select
+              value={activeSite?.id || ""}
+              onChange={(event) => selectSite(event.target.value)}
+            >
+              {sites.map((site) => (
+                <option value={site.id} key={site.id}>
+                  {site.name} / {site.slug}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={duplicateSite}
+            disabled={!activeSite || settingsBusy}
+          >
+            Duplicate storefront
+          </button>
+
+          {activeSite && (
+            <a
+              className="ghost-btn site-preview-link"
+              href={activeSite.is_default ? "/" : `/s/${activeSite.slug}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open storefront
+            </a>
+          )}
+        </div>
+      </section>
+
       <section className="admin-panel homepage-settings-panel">
         <div className="settings-heading">
           <div>
@@ -575,6 +823,81 @@ export default function AdminPage() {
                 />
               </label>
             </div>
+
+            <div className="form-grid branding-meta-grid">
+              <label>
+                Browser / Google title
+                <input
+                  value={siteSettings.settings?.branding?.siteTitle || ""}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        branding: {
+                          ...(siteSettings.settings?.branding || {}),
+                          siteTitle: event.target.value
+                        }
+                      }
+                    })
+                  }
+                  placeholder="YE2K — Original Production"
+                />
+              </label>
+
+              <label>
+                Search and share description
+                <input
+                  value={siteSettings.settings?.branding?.siteDescription || ""}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        branding: {
+                          ...(siteSettings.settings?.branding || {}),
+                          siteDescription: event.target.value
+                        }
+                      }
+                    })
+                  }
+                  placeholder="Original production. Immediate preview. Secure delivery."
+                />
+              </label>
+
+              <label className="settings-upload-field">
+                Favicon
+                <small>PNG, JPG, or WebP. Square images work best.</small>
+                <input
+                  key={`favicon-${settingsFileInputKey}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => setFaviconFile(event.target.files?.[0] || null)}
+                />
+              </label>
+
+              <label className="settings-upload-field">
+                Google / social share image
+                <small>Recommended size: 1200 × 630.</small>
+                <input
+                  key={`share-${settingsFileInputKey}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => setShareImageFile(event.target.files?.[0] || null)}
+                />
+              </label>
+            </div>
+
+            {siteSettings.settings?.branding?.faviconPath && (
+              <p className="settings-current-file">
+                Favicon: {siteSettings.settings.branding.faviconPath}
+              </p>
+            )}
+            {siteSettings.settings?.branding?.shareImagePath && (
+              <p className="settings-current-file">
+                Share image: {siteSettings.settings.branding.shareImagePath}
+              </p>
+            )}
           </div>
 
           <div className="settings-subsection">
