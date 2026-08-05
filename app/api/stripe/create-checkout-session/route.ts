@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const beatIds = body?.beatIds;
+    const siteSlug = typeof body?.siteSlug === "string" ? body.siteSlug : "ye2k";
 
     if (
       !Array.isArray(beatIds) ||
@@ -37,10 +38,25 @@ export async function POST(request: Request) {
 
     const uniqueBeatIds = [...new Set(beatIds)];
 
+    const { data: site, error: siteError } = await supabase
+      .from("sites")
+      .select("id,name,slug")
+      .eq("slug", siteSlug)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (siteError || !site) {
+      return NextResponse.json(
+        { error: "The storefront could not be verified." },
+        { status: 400 }
+      );
+    }
+
     const { data: beats, error: beatsError } = await supabase
       .from("beats")
-      .select("id,title,price,status,mp3_path,wav_path")
+      .select("id,title,price,status,mp3_path,wav_path,site_id")
       .in("id", uniqueBeatIds)
+      .eq("site_id", site.id)
       .eq("status", "published");
 
     if (beatsError) {
@@ -85,6 +101,7 @@ export async function POST(request: Request) {
         total: totalCents / 100,
         payment_status: "pending",
         beat_ids: uniqueBeatIds,
+        site_id: site.id,
         download_token_hash: downloadTokenHash
       });
 
@@ -109,25 +126,30 @@ export async function POST(request: Request) {
             unit_amount: Math.round(Number(beat.price) * 100),
             product_data: {
               name: beat.title,
-              description: `YE2K beat purchase · ${beat.wav_path ? "MP3 + WAV" : "MP3"}`
+              description: `${site.name} beat purchase · ${beat.wav_path ? "MP3 + WAV" : "MP3"}`
             }
           }
         })),
         client_reference_id: internalOrderId,
         metadata: {
-          internal_order_id: internalOrderId
+          internal_order_id: internalOrderId,
+          site_id: site.id,
+          site_slug: site.slug
         },
         payment_intent_data: {
           metadata: {
-            internal_order_id: internalOrderId
+            internal_order_id: internalOrderId,
+            site_id: site.id,
+            site_slug: site.slug
           }
         },
         billing_address_collection: "auto",
         success_url:
           `${siteUrl}/checkout/success` +
           `?session_id={CHECKOUT_SESSION_ID}` +
-          `&token=${encodeURIComponent(downloadToken)}`,
-        cancel_url: `${siteUrl}/checkout`,
+          `&token=${encodeURIComponent(downloadToken)}` +
+          `&site=${encodeURIComponent(site.slug)}`,
+        cancel_url: `${siteUrl}/checkout?site=${encodeURIComponent(site.slug)}`,
         allow_promotion_codes: false
       },
       {
