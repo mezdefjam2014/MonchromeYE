@@ -23,6 +23,7 @@ export type Beat = {
   preview_path: string;
   mp3_path: string;
   wav_path: string | null;
+  release_at: string | null;
   created_at: string;
 };
 
@@ -65,6 +66,12 @@ export type SiteSettings = {
     };
     hero?: {
       globeVisible?: boolean;
+    };
+    drop?: {
+      featuredBeatId?: string;
+      featuredEnabled?: boolean;
+      fullscreenEnabled?: boolean;
+      countdownEnabled?: boolean;
     };
     [key: string]: unknown;
   };
