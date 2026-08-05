@@ -32,7 +32,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     items,
     total: items.reduce((sum, item) => sum + Number(item.price), 0),
-    add: (beat: Beat) => setItems(current => current.some(item => item.id === beat.id) ? current : [...current, beat]),
+    add: (beat: Beat) =>
+      setItems((current) => {
+        const currentSiteId = current[0]?.site_id;
+
+        if (currentSiteId && currentSiteId !== beat.site_id) {
+          return [beat];
+        }
+
+        return current.some((item) => item.id === beat.id)
+          ? current
+          : [...current, beat];
+      }),
     remove: (id: string) => setItems(current => current.filter(item => item.id !== id)),
     clear: () => setItems([]),
     has: (id: string) => items.some(item => item.id === id)

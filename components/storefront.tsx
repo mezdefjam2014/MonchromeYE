@@ -10,7 +10,7 @@ import {
 } from "react";
 import { createBrowserClient } from "@/lib/supabase/browser";
 import { useCart } from "@/components/cart-provider";
-import type { Beat, SiteSettings } from "@/lib/types";
+import type { Beat, Site, SiteSettings } from "@/lib/types";
 
 const PAGE_SIZE = 15;
 
@@ -27,7 +27,11 @@ const defaultSettings: SiteSettings = {
     },
     branding: {
       headerLogoText: "YE2K",
-      footerLogoText: "YE2K"
+      footerLogoText: "YE2K",
+      faviconPath: "",
+      shareImagePath: "",
+      siteTitle: "YE2K — Original Production",
+      siteDescription: "Original production. Immediate preview. Secure delivery."
     },
     about: {
       visible: true,
@@ -695,11 +699,12 @@ function InteractiveWorld() {
 }
 
 
-export default function Storefront() {
+export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string }) {
   const supabase = useMemo(() => createBrowserClient(), []);
   const { items, add, remove, has, total } = useCart();
 
   const [beats, setBeats] = useState<Beat[]>([]);
+  const [site, setSite] = useState<Site | null>(null);
   const [settings, setSettings] =
     useState<SiteSettings>(defaultSettings);
   const [query, setQuery] = useState("");
@@ -721,30 +726,82 @@ export default function Storefront() {
   const workspaceTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      supabase
-        .from("beats")
+    let cancelled = false;
+
+    async function loadStorefront() {
+      setLoading(true);
+
+      const { data: siteData, error: siteError } = await supabase
+        .from("sites")
         .select("*")
-        .eq("status", "published")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("site_settings")
-        .select("*")
-        .eq("id", 1)
-        .maybeSingle()
-    ]).then(([beatsResult, settingsResult]) => {
-      setBeats((beatsResult.data || []) as Beat[]);
+        .eq("slug", siteSlug)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (siteError || !siteData) {
+        setSite(null);
+        setBeats([]);
+        setLoading(false);
+        return;
+      }
+
+      const currentSite = siteData as Site;
+      setSite(currentSite);
+
+      const [beatsResult, settingsResult] = await Promise.all([
+        supabase
+          .from("beats")
+          .select("*")
+          .eq("site_id", currentSite.id)
+          .eq("status", "published")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("storefront_settings")
+          .select("*")
+          .eq("site_id", currentSite.id)
+          .maybeSingle()
+      ]);
+
+      if (cancelled) return;
+
+      setBeats(
+        ((beatsResult.data || []) as Beat[]).map((beat) => ({
+          ...beat,
+          site_slug: currentSite.slug
+        }))
+      );
+
       if (settingsResult.data) {
         setSettings(settingsResult.data as SiteSettings);
+      } else {
+        setSettings({
+          ...defaultSettings,
+          site_id: currentSite.id,
+          settings: {
+            ...(defaultSettings.settings || {}),
+            branding: {
+              ...(defaultSettings.settings?.branding || {}),
+              headerLogoText: currentSite.name,
+              footerLogoText: currentSite.name,
+              siteTitle: `${currentSite.name} — Original Production`
+            }
+          }
+        });
       }
+
       setLoading(false);
-    });
+    }
+
+    loadStorefront();
 
     return () => {
+      cancelled = true;
       audioRef.current?.pause();
       audioRef.current = null;
     };
-  }, [supabase]);
+  }, [siteSlug, supabase]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -1070,7 +1127,11 @@ export default function Storefront() {
 
       <header className="site-header">
         <div className="brand-world">
-          <Link href="/" className="brand" aria-label={`${headerLogoText} home`}>
+          <Link
+            href={site?.is_default ? "/" : `/s/${siteSlug}`}
+            className="brand"
+            aria-label={`${headerLogoText} home`}
+          >
             <span>{headerLogoText}</span>
           </Link>
           <div className="world-mark" aria-label="Worldwide digital delivery">
@@ -1349,7 +1410,7 @@ export default function Storefront() {
         <div className="brand footer-brand" aria-label={footerLogoText}>
           <span>{footerLogoText}</span>
         </div>
-        <p>Premium beats. Clear pricing. Instant delivery.</p>
+        <p>{settings.settings?.branding?.siteDescription || "Premium beats. Clear pricing. Instant delivery."}</p>
         <div>
           <button type="button" onClick={() => setLegalModal("terms")}>
             Terms
@@ -1745,7 +1806,7 @@ export default function Storefront() {
             <strong>${total.toFixed(2)}</strong>
           </div>
           <Link
-            href="/checkout"
+            href={`/checkout?site=${encodeURIComponent(siteSlug)}`}
             className={`checkout-btn ${
               items.length === 0 ? "disabled" : ""
             }`}
