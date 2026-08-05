@@ -3114,3 +3114,53 @@ html{scroll-behavior:smooth}
   .admin-form-actions{flex-direction:column}
   .admin-form-actions button{width:100%}
 }
+
+
+/* Storefront deletion and rendering performance */
+.site-manager-actions{
+  grid-template-columns:minmax(220px,1fr) auto auto auto;
+}
+
+.site-manager-actions .danger-btn{
+  min-height:46px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+}
+
+.interactive-world-frame{
+  contain:layout paint;
+}
+
+.about-band,
+.site-shell>footer{
+  content-visibility:auto;
+  contain-intrinsic-size:1px 520px;
+}
+
+@media(max-width:980px){
+  .site-manager-actions{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .site-manager-actions label{
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:760px){
+  .site-manager-actions{
+    grid-template-columns:1fr;
+  }
+
+  .site-manager-actions label{
+    grid-column:auto;
+  }
+
+  .site-manager-actions .primary-btn,
+  .site-manager-actions .danger-btn,
+  .site-manager-actions .site-preview-link{
+    width:100%;
+  }
+}
