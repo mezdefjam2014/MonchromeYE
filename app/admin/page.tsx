@@ -246,6 +246,74 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteSite() {
+    if (!activeSite || activeSite.is_default) return;
+
+    const confirmed = window.confirm(
+      `Permanently delete "${activeSite.name}"?\n\nThis removes its beats, settings, artwork, previews, MP3s, and WAVs from Supabase. Existing payment records are preserved without the deleted site link. This cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    const typedSlug = window.prompt(
+      `Type ${activeSite.slug} to confirm permanent deletion.`
+    );
+
+    if (typedSlug !== activeSite.slug) {
+      setSettingsMessage("Storefront deletion canceled.");
+      return;
+    }
+
+    setSettingsBusy(true);
+    setSettingsMessage("");
+
+    try {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Your admin session expired. Sign in again.");
+      }
+
+      const response = await fetch(
+        `/api/admin/sites/${encodeURIComponent(activeSite.id)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Could not delete the storefront."
+        );
+      }
+
+      setSettingsMessage(
+        `${result.site?.name || "Storefront"} deleted. ${
+          result.removedFiles || 0
+        } storage file(s) removed.`
+      );
+      setActiveSite(null);
+      setBeats([]);
+      resetForm();
+      await loadSites();
+    } catch (error) {
+      setSettingsMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not delete the storefront."
+      );
+    } finally {
+      setSettingsBusy(false);
+    }
+  }
+
   async function saveSiteSettings(event: React.FormEvent) {
     event.preventDefault();
     setSettingsBusy(true);
@@ -706,6 +774,24 @@ export default function AdminPage() {
             disabled={!activeSite || settingsBusy}
           >
             Duplicate storefront
+          </button>
+
+          <button
+            type="button"
+            className="danger-btn"
+            onClick={deleteSite}
+            disabled={
+              !activeSite ||
+              activeSite.is_default ||
+              settingsBusy
+            }
+            title={
+              activeSite?.is_default
+                ? "The default storefront cannot be deleted."
+                : "Permanently delete this storefront and its Supabase files."
+            }
+          >
+            Delete storefront
           </button>
 
           {activeSite && (
