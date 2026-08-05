@@ -54,6 +54,12 @@ const defaultSettings: SiteSettings = {
     },
     hero: {
       globeVisible: true
+    },
+    drop: {
+      featuredBeatId: "",
+      featuredEnabled: false,
+      fullscreenEnabled: false,
+      countdownEnabled: true
     }
   },
   updated_at: ""
@@ -810,6 +816,8 @@ export default function Storefront({
   const [workspaceNotes, setWorkspaceNotes] = useState("");
   const [workspaceSaved, setWorkspaceSaved] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [now, setNow] = useState(() => Date.now());
+  const [dropEntered, setDropEntered] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -844,7 +852,7 @@ export default function Storefront({
         supabase
           .from("beats")
           .select(
-            "id,site_id,title,catalog_code,slug,producer,price,status,cover_path,preview_path,mp3_path,wav_path,created_at"
+            "id,site_id,title,catalog_code,slug,producer,price,status,cover_path,preview_path,mp3_path,wav_path,release_at,created_at"
           )
           .eq("site_id", currentSite.id)
           .eq("status", "published")
@@ -918,6 +926,11 @@ export default function Storefront({
     };
   }, [cartOpen, legalModal]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const filteredBeats = useMemo(() => {
     const normalizedFocus = focusBeatCode?.trim().toLowerCase();
 
@@ -925,16 +938,25 @@ export default function Storefront({
       return beats.filter((beat) => {
         const code = beat.catalog_code?.toLowerCase();
         const slug = beat.slug?.toLowerCase();
-        return code === normalizedFocus || slug === normalizedFocus;
+        const released =
+          !beat.release_at || new Date(beat.release_at).getTime() <= now;
+
+        return released && (code === normalizedFocus || slug === normalizedFocus);
       });
     }
 
-    return beats.filter((beat) =>
-      `${beat.title} ${beat.producer}`
-        .toLowerCase()
-        .includes(query.toLowerCase())
-    );
-  }, [beats, focusBeatCode, query]);
+    return beats.filter((beat) => {
+      const released =
+        !beat.release_at || new Date(beat.release_at).getTime() <= now;
+
+      return (
+        released &&
+        `${beat.title} ${beat.producer}`
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      );
+    });
+  }, [beats, focusBeatCode, now, query]);
 
   const visibleBeats = filteredBeats.slice(0, visibleCount);
 
@@ -982,6 +1004,20 @@ export default function Storefront({
     settings.settings?.branding?.footerLogoText?.trim() || "YE2K";
   const aboutVisible = settings.settings?.about?.visible !== false;
   const globeVisible = settings.settings?.hero?.globeVisible !== false;
+  const dropSettings = settings.settings?.drop;
+  const featuredBeat =
+    beats.find((beat) => beat.id === dropSettings?.featuredBeatId) || null;
+  const featuredReleaseTime = featuredBeat?.release_at
+    ? new Date(featuredBeat.release_at).getTime()
+    : null;
+  const featuredReleased =
+    !featuredReleaseTime || featuredReleaseTime <= now;
+  const featuredVisible =
+    dropSettings?.featuredEnabled === true && featuredBeat !== null;
+  const fullscreenDropVisible =
+    dropSettings?.fullscreenEnabled === true &&
+    featuredBeat !== null &&
+    !dropEntered;
   const announcement = settings.settings?.announcement;
   const creativeSettings = settings.settings?.creative;
   const workspaceEnabled = creativeSettings?.workspaceEnabled === true;
@@ -1189,6 +1225,18 @@ export default function Storefront({
     URL.revokeObjectURL(url);
   }
 
+  function countdownParts(target: number | null) {
+    const remaining = Math.max(0, (target || 0) - now);
+    const totalSeconds = Math.floor(remaining / 1000);
+
+    return {
+      days: Math.floor(totalSeconds / 86400),
+      hours: Math.floor((totalSeconds % 86400) / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+      seconds: totalSeconds % 60
+    };
+  }
+
   function buyNow(beat: Beat) {
     if (!has(beat.id)) add(beat);
     setCartOpen(true);
@@ -1272,7 +1320,69 @@ export default function Storefront({
         </div>
       </header>
 
-      {loading ? (
+      {!loading && fullscreenDropVisible && featuredBeat ? (
+        <section className="fullscreen-drop" aria-label="Featured drop">
+          <div className="fullscreen-drop-inner">
+            <p className="eyebrow">FEATURED DROP</p>
+            <span className="drop-code">
+              {featuredBeat.catalog_code || "YE2K"}
+            </span>
+            <h1>{featuredBeat.title}</h1>
+            <p>{featuredBeat.producer}</p>
+
+            {!featuredReleased &&
+              dropSettings?.countdownEnabled !== false &&
+              featuredReleaseTime && (
+                <div className="drop-clock" aria-label="Release countdown">
+                  {Object.entries(countdownParts(featuredReleaseTime)).map(
+                    ([label, value]) => (
+                      <div key={label}>
+                        <strong>{String(value).padStart(2, "0")}</strong>
+                        <span>{label}</span>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+
+            <p className="drop-release-label">
+              {featuredReleased
+                ? "AVAILABLE NOW"
+                : featuredBeat.release_at
+                  ? new Intl.DateTimeFormat(undefined, {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true
+                    }).format(new Date(featuredBeat.release_at))
+                  : "COMING SOON"}
+            </p>
+
+            <div className="drop-actions">
+              {featuredReleased && (
+                <>
+                  <button onClick={() => playBeat(featuredBeat)}>
+                    {activeBeat?.id === featuredBeat.id && playing
+                      ? "Pause preview"
+                      : "Play preview"}
+                  </button>
+                  <button
+                    className="drop-buy"
+                    onClick={() => buyNow(featuredBeat)}
+                  >
+                    Buy — ${Number(featuredBeat.price).toFixed(2)}
+                  </button>
+                </>
+              )}
+              <button onClick={() => setDropEntered(true)}>
+                Enter store
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : loading ? (
         <section
           className="hero hero-clean hero-loading"
           aria-label="Loading website content"
@@ -1306,6 +1416,63 @@ export default function Storefront({
           {globeVisible && <InteractiveWorld />}
         </section>
       )}
+
+      {!loading &&
+        !fullscreenDropVisible &&
+        featuredVisible &&
+        featuredBeat && (
+          <section className="featured-beat">
+            <div>
+              <p className="eyebrow">
+                {featuredReleased ? "FEATURED BEAT" : "NEXT DROP"}
+              </p>
+              <span>{featuredBeat.catalog_code || "YE2K"}</span>
+              <h2>{featuredBeat.title}</h2>
+              <p>{featuredBeat.producer}</p>
+            </div>
+
+            {!featuredReleased ? (
+              dropSettings?.countdownEnabled !== false &&
+              featuredReleaseTime ? (
+                <div className="featured-countdown">
+                  {Object.entries(countdownParts(featuredReleaseTime)).map(
+                    ([label, value]) => (
+                      <div key={label}>
+                        <strong>{String(value).padStart(2, "0")}</strong>
+                        <span>{label}</span>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <p className="featured-release-date">
+                  {featuredBeat.release_at
+                    ? new Intl.DateTimeFormat(undefined, {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true
+                      }).format(new Date(featuredBeat.release_at))
+                    : "COMING SOON"}
+                </p>
+              )
+            ) : (
+              <div className="featured-actions">
+                <button onClick={() => playBeat(featuredBeat)}>
+                  {activeBeat?.id === featuredBeat.id && playing
+                    ? "Pause"
+                    : "Preview"}
+                </button>
+                <button onClick={() => buyNow(featuredBeat)}>
+                  Buy — ${Number(featuredBeat.price).toFixed(2)}
+                </button>
+                <Link href={beatHref(featuredBeat)}>View beat</Link>
+              </div>
+            )}
+          </section>
+        )}
 
       <section className="samples-shell" id="beats">
         <div className="catalog-toolbar">
