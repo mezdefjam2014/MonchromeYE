@@ -1,5 +1,18 @@
+export type Site = {
+  id: string;
+  name: string;
+  slug: string;
+  domain: string | null;
+  catalog_prefix: string;
+  is_default: boolean;
+  active: boolean;
+  created_at: string;
+};
+
 export type Beat = {
   id: string;
+  site_id: string;
+  site_slug?: string;
   title: string;
   catalog_code: string | null;
   slug: string;
@@ -14,7 +27,8 @@ export type Beat = {
 };
 
 export type SiteSettings = {
-  id: number;
+  id?: number;
+  site_id?: string;
   eyebrow: string;
   headline_primary: string;
   headline_accent: string;
@@ -26,6 +40,10 @@ export type SiteSettings = {
     branding?: {
       headerLogoText?: string;
       footerLogoText?: string;
+      faviconPath?: string;
+      shareImagePath?: string;
+      siteTitle?: string;
+      siteDescription?: string;
     };
     about?: {
       visible?: boolean;
