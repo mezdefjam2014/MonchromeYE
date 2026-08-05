@@ -9,14 +9,72 @@ type FormState = {
   producer: string;
   price: string;
   status: "draft" | "published";
+  releaseDate: string;
+  releaseTime: string;
+  releaseMeridiem: "AM" | "PM";
 };
 
 const initial: FormState = {
   title: "",
   producer: "YE2K",
   price: "29.99",
-  status: "draft"
+  status: "draft",
+  releaseDate: "",
+  releaseTime: "",
+  releaseMeridiem: "PM"
 };
+
+function releaseFieldsFromIso(value: string | null) {
+  if (!value) {
+    return { releaseDate: "", releaseTime: "", releaseMeridiem: "PM" as const };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return { releaseDate: "", releaseTime: "", releaseMeridiem: "PM" as const };
+  }
+
+  const hours24 = date.getHours();
+  const hours12 = hours24 % 12 || 12;
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return {
+    releaseDate: [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")
+    ].join("-"),
+    releaseTime: `${hours12}:${minutes}`,
+    releaseMeridiem: (hours24 >= 12 ? "PM" : "AM") as "AM" | "PM"
+  };
+}
+
+function releaseIsoFromFields(form: FormState) {
+  if (!form.releaseDate.trim() && !form.releaseTime.trim()) return null;
+
+  if (!form.releaseDate.trim() || !form.releaseTime.trim()) {
+    throw new Error("Choose both a release date and release time, or leave both empty.");
+  }
+
+  const match = form.releaseTime.trim().match(/^(1[0-2]|[1-9]):([0-5][0-9])$/);
+  if (!match) {
+    throw new Error("Release time must use a 12-hour format such as 8:00.");
+  }
+
+  const hour12 = Number(match[1]);
+  const minutes = Number(match[2]);
+  const hour24 =
+    form.releaseMeridiem === "AM" ? hour12 % 12 : (hour12 % 12) + 12;
+
+  const [year, month, day] = form.releaseDate.split("-").map(Number);
+  const date = new Date(year, month - 1, day, hour24, minutes, 0, 0);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("The release date and time are invalid.");
+  }
+
+  return date.toISOString();
+}
 
 const defaultSiteSettings: SiteSettings = {
   id: 1,
@@ -57,6 +115,12 @@ const defaultSiteSettings: SiteSettings = {
     },
     hero: {
       globeVisible: true
+    },
+    drop: {
+      featuredBeatId: "",
+      featuredEnabled: false,
+      fullscreenEnabled: false,
+      countdownEnabled: true
     }
   },
   updated_at: ""
@@ -412,6 +476,16 @@ export default function AdminPage() {
         hero: {
           globeVisible:
             siteSettings.settings?.hero?.globeVisible !== false
+        },
+        drop: {
+          featuredBeatId:
+            siteSettings.settings?.drop?.featuredBeatId || "",
+          featuredEnabled:
+            siteSettings.settings?.drop?.featuredEnabled === true,
+          fullscreenEnabled:
+            siteSettings.settings?.drop?.fullscreenEnabled === true,
+          countdownEnabled:
+            siteSettings.settings?.drop?.countdownEnabled !== false
         }
       };
 
@@ -500,7 +574,8 @@ export default function AdminPage() {
       title: beat.title,
       producer: beat.producer,
       price: String(beat.price),
-      status: beat.status === "published" ? "published" : "draft"
+      status: beat.status === "published" ? "published" : "draft",
+      ...releaseFieldsFromIso(beat.release_at)
     });
     setCover(null);
     setPreview(null);
@@ -564,6 +639,7 @@ export default function AdminPage() {
         preview_path: previewPath,
         mp3_path: mp3Path,
         wav_path: wavPath,
+        release_at: releaseIsoFromFields(form),
         updated_at: new Date().toISOString()
       };
 
@@ -1248,6 +1324,114 @@ export default function AdminPage() {
             </label>
           </div>
 
+          <div className="settings-subsection drop-settings">
+            <div>
+              <p className="eyebrow">FEATURED DROP</p>
+              <h3>Featured beat and drop mode</h3>
+              <p className="settings-help">
+                Pick one beat to feature. A scheduled published beat stays hidden from the catalog until its release time.
+              </p>
+            </div>
+
+            <label>
+              Featured beat
+              <select
+                value={siteSettings.settings?.drop?.featuredBeatId || ""}
+                onChange={(event) =>
+                  setSiteSettings({
+                    ...siteSettings,
+                    settings: {
+                      ...(siteSettings.settings || {}),
+                      drop: {
+                        ...(siteSettings.settings?.drop || {}),
+                        featuredBeatId: event.target.value
+                      }
+                    }
+                  })
+                }
+              >
+                <option value="">No featured beat</option>
+                {beats.map((beat) => (
+                  <option key={beat.id} value={beat.id}>
+                    {beat.catalog_code ? `${beat.catalog_code} — ` : ""}
+                    {beat.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="creative-toggle-grid">
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={siteSettings.settings?.drop?.featuredEnabled === true}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        drop: {
+                          ...(siteSettings.settings?.drop || {}),
+                          featuredEnabled: event.target.checked
+                        }
+                      }
+                    })
+                  }
+                />
+                <span>
+                  <strong>Show featured beat</strong>
+                  <small>Displays the selected beat above the catalog.</small>
+                </span>
+              </label>
+
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={siteSettings.settings?.drop?.fullscreenEnabled === true}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        drop: {
+                          ...(siteSettings.settings?.drop || {}),
+                          fullscreenEnabled: event.target.checked
+                        }
+                      }
+                    })
+                  }
+                />
+                <span>
+                  <strong>Enable fullscreen drop</strong>
+                  <small>Opens the storefront with the featured release.</small>
+                </span>
+              </label>
+
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={siteSettings.settings?.drop?.countdownEnabled !== false}
+                  onChange={(event) =>
+                    setSiteSettings({
+                      ...siteSettings,
+                      settings: {
+                        ...(siteSettings.settings || {}),
+                        drop: {
+                          ...(siteSettings.settings?.drop || {}),
+                          countdownEnabled: event.target.checked
+                        }
+                      }
+                    })
+                  }
+                />
+                <span>
+                  <strong>Show drop clock</strong>
+                  <small>The clock disappears automatically at release.</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className="settings-subsection about-settings">
             <div>
               <p className="eyebrow">ABOUT SECTION</p>
@@ -1393,6 +1577,47 @@ export default function AdminPage() {
                 >
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
+                </select>
+              </label>
+
+              <label>
+                Release date (optional)
+                <input
+                  type="date"
+                  value={form.releaseDate}
+                  onChange={(event) =>
+                    setForm({ ...form, releaseDate: event.target.value })
+                  }
+                />
+              </label>
+
+              <label>
+                Release time (optional)
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={form.releaseTime}
+                  onChange={(event) =>
+                    setForm({ ...form, releaseTime: event.target.value })
+                  }
+                  placeholder="8:00"
+                />
+                <small>Use 12-hour time, for example 8:00 PM.</small>
+              </label>
+
+              <label>
+                AM / PM
+                <select
+                  value={form.releaseMeridiem}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      releaseMeridiem: event.target.value as "AM" | "PM"
+                    })
+                  }
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
                 </select>
               </label>
             </div>
