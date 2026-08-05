@@ -21,6 +21,7 @@ export default function SuccessPage() {
   const [message, setMessage] = useState(
     "Stripe is confirming your payment and preparing your files…"
   );
+  const [siteSlug, setSiteSlug] = useState("ye2k");
 
   useEffect(() => {
     let cancelled = false;
@@ -28,6 +29,7 @@ export default function SuccessPage() {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
     const token = params.get("token");
+    setSiteSlug(params.get("site") || "ye2k");
 
     if (!sessionId || !token) {
       setMessage(
@@ -163,8 +165,11 @@ export default function SuccessPage() {
           </div>
         )}
 
-        <Link href="/" className="primary-btn inline-btn">
-          Return to YE2K
+        <Link
+          href={siteSlug === "ye2k" ? "/" : `/s/${siteSlug}`}
+          className="primary-btn inline-btn"
+        >
+          Return to store
         </Link>
       </section>
     </main>
