@@ -1125,7 +1125,10 @@ export default function Storefront() {
             <p className="eyebrow">{settings.eyebrow}</p>
             <h1>
               <span>{settings.headline_primary}</span>
-              <em>{settings.headline_accent}</em>
+              {settings.headline_accent.trim() &&
+                !/^[.·•▪■\s]+$/.test(settings.headline_accent) && (
+                  <em>{settings.headline_accent}</em>
+                )}
             </h1>
             <span className="hero-period" aria-hidden="true" />
             <p className="hero-copy">{settings.description}</p>
