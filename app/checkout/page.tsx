@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCart } from "@/components/cart-provider";
 
 export default function CheckoutPage() {
   const { items, total } = useCart();
+  const siteSlug = useMemo(
+    () => items[0]?.site_slug || "ye2k",
+    [items]
+  );
+  const storeHref = siteSlug === "ye2k" ? "/" : `/s/${siteSlug}`;
   const [checkoutError, setCheckoutError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +27,8 @@ export default function CheckoutPage() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          beatIds: items.map((item) => item.id)
+          beatIds: items.map((item) => item.id),
+          siteSlug
         })
       });
 
@@ -47,7 +53,7 @@ export default function CheckoutPage() {
 
   return (
     <main className="checkout-page">
-      <Link href="/" className="back-link">
+      <Link href={storeHref} className="back-link">
         ← Back to store
       </Link>
 
