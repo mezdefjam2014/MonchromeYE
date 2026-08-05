@@ -68,6 +68,83 @@ function formatTime(value: number) {
   return `${minutes}:${seconds}`;
 }
 
+
+type CachedWaveform = {
+  peaks: number[];
+  duration: number;
+};
+
+const waveformCache = new Map<string, Promise<CachedWaveform>>();
+
+async function decodeWaveform(
+  src: string,
+  barCount: number
+): Promise<CachedWaveform> {
+  const cacheKey = `${src}:${barCount}`;
+  const cached = waveformCache.get(cacheKey);
+  if (cached) return cached;
+
+  const task = (async () => {
+    const response = await fetch(src, { cache: "force-cache" });
+    if (!response.ok) throw new Error("Could not load waveform.");
+
+    const arrayBuffer = await response.arrayBuffer();
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      }).webkitAudioContext;
+
+    if (!AudioContextClass) throw new Error("Web Audio unavailable.");
+
+    const audioContext = new AudioContextClass();
+
+    try {
+      const audioBuffer = await audioContext.decodeAudioData(
+        arrayBuffer.slice(0)
+      );
+      const channel = audioBuffer.getChannelData(0);
+      const blockSize = Math.max(
+        1,
+        Math.floor(channel.length / barCount)
+      );
+      const nextPeaks: number[] = [];
+
+      for (let bar = 0; bar < barCount; bar += 1) {
+        const start = bar * blockSize;
+        const end = Math.min(start + blockSize, channel.length);
+        let max = 0;
+
+        for (let sample = start; sample < end; sample += 8) {
+          max = Math.max(max, Math.abs(channel[sample]));
+        }
+
+        nextPeaks.push(max);
+      }
+
+      const highest = Math.max(...nextPeaks, 0.01);
+
+      return {
+        peaks: nextPeaks.map((peak) =>
+          Math.max(0.08, peak / highest)
+        ),
+        duration: audioBuffer.duration
+      };
+    } finally {
+      await audioContext.close();
+    }
+  })();
+
+  waveformCache.set(cacheKey, task);
+
+  try {
+    return await task;
+  } catch (error) {
+    waveformCache.delete(cacheKey);
+    throw error;
+  }
+}
+
 function WaveformCanvas({
   src,
   currentTime,
@@ -85,9 +162,11 @@ function WaveformCanvas({
   onSeek: (seconds: number) => void;
   onDuration?: (seconds: number) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [peaks, setPeaks] = useState<number[]>([]);
   const [decodedDuration, setDecodedDuration] = useState(0);
+  const [shouldLoad, setShouldLoad] = useState(false);
   const draggingRef = useRef(false);
   const onDurationRef = useRef(onDuration);
 
@@ -96,83 +175,45 @@ function WaveformCanvas({
   }, [onDuration]);
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "280px 0px" }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoad || !src) return;
+
     let cancelled = false;
-    const controller = new AbortController();
+    const barCount = compact ? 150 : 210;
 
-    async function buildWaveform() {
-      setPeaks([]);
-      setDecodedDuration(0);
+    decodeWaveform(src, barCount)
+      .then((data) => {
+        if (cancelled) return;
 
-      try {
-        const response = await fetch(src, {
-          signal: controller.signal,
-          cache: "force-cache"
-        });
-
-        if (!response.ok) throw new Error("Could not load waveform.");
-
-        const arrayBuffer = await response.arrayBuffer();
-        const AudioContextClass =
-          window.AudioContext ||
-          (window as typeof window & {
-            webkitAudioContext?: typeof AudioContext;
-          }).webkitAudioContext;
-
-        if (!AudioContextClass) throw new Error("Web Audio unavailable.");
-
-        const audioContext = new AudioContextClass();
-        const audioBuffer = await audioContext.decodeAudioData(
-          arrayBuffer.slice(0)
-        );
-        const channel = audioBuffer.getChannelData(0);
-        const barCount = compact ? 150 : 210;
-        const blockSize = Math.max(
-          1,
-          Math.floor(channel.length / barCount)
-        );
-        const nextPeaks: number[] = [];
-
-        for (let bar = 0; bar < barCount; bar += 1) {
-          const start = bar * blockSize;
-          const end = Math.min(start + blockSize, channel.length);
-          let max = 0;
-
-          for (let sample = start; sample < end; sample += 8) {
-            max = Math.max(max, Math.abs(channel[sample]));
-          }
-
-          nextPeaks.push(max);
-        }
-
-        const highest = Math.max(...nextPeaks, 0.01);
-        const normalized = nextPeaks.map((peak) =>
-          Math.max(0.08, peak / highest)
-        );
-
-        await audioContext.close();
-
-        if (!cancelled) {
-          setPeaks(normalized);
-          setDecodedDuration(audioBuffer.duration);
-          onDurationRef.current?.(audioBuffer.duration);
-        }
-      } catch (error) {
-        if (
-          !cancelled &&
-          !(error instanceof DOMException && error.name === "AbortError")
-        ) {
-          setPeaks([]);
-        }
-      }
-    }
-
-    buildWaveform();
+        setPeaks(data.peaks);
+        setDecodedDuration(data.duration);
+        onDurationRef.current?.(data.duration);
+      })
+      .catch(() => {
+        if (!cancelled) setPeaks([]);
+      });
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
-  }, [compact, src]);
+  }, [compact, shouldLoad, src]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -266,6 +307,7 @@ function WaveformCanvas({
 
   return (
     <div
+      ref={containerRef}
       className={`real-waveform ${compact ? "is-compact" : ""} ${
         playing ? "is-playing" : ""
       }`}
@@ -377,6 +419,8 @@ function InteractiveWorld() {
 
     let animationFrame = 0;
     let previousTime = performance.now();
+    let isVisible = false;
+    let pageVisible = !document.hidden;
     let lastWidth = 0;
     let lastHeight = 0;
     let pixelRatio = 1;
@@ -636,20 +680,60 @@ function InteractiveWorld() {
       );
       context.fill();
 
-      animationFrame = window.requestAnimationFrame(draw);
+      if (isVisible && pageVisible) {
+        animationFrame = window.requestAnimationFrame(draw);
+      }
+    };
+
+    const startAnimation = () => {
+      if (!isVisible || !pageVisible || animationFrame) return;
+      previousTime = performance.now();
+      animationFrame = window.requestAnimationFrame((time) => {
+        animationFrame = 0;
+        draw(time);
+      });
+    };
+
+    const stopAnimation = () => {
+      if (!animationFrame) return;
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = 0;
+    };
+
+    const visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        isVisible = Boolean(entries[0]?.isIntersecting);
+
+        if (isVisible) startAnimation();
+        else stopAnimation();
+      },
+      { rootMargin: "180px 0px" }
+    );
+
+    const handleVisibilityChange = () => {
+      pageVisible = !document.hidden;
+
+      if (pageVisible) startAnimation();
+      else stopAnimation();
     };
 
     const resizeObserver = new ResizeObserver(() => {
       lastWidth = 0;
       lastHeight = 0;
     });
-    resizeObserver.observe(canvas);
 
-    animationFrame = window.requestAnimationFrame(draw);
+    resizeObserver.observe(canvas);
+    visibilityObserver.observe(canvas);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       resizeObserver.disconnect();
-      window.cancelAnimationFrame(animationFrame);
+      visibilityObserver.disconnect();
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+      stopAnimation();
     };
   }, []);
 
@@ -753,7 +837,9 @@ export default function Storefront({ siteSlug = "ye2k" }: { siteSlug?: string })
       const [beatsResult, settingsResult] = await Promise.all([
         supabase
           .from("beats")
-          .select("*")
+          .select(
+            "id,site_id,title,catalog_code,slug,producer,price,status,cover_path,preview_path,mp3_path,wav_path,created_at"
+          )
           .eq("site_id", currentSite.id)
           .eq("status", "published")
           .order("created_at", { ascending: false }),
