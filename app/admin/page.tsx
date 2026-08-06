@@ -175,6 +175,50 @@ function DropFileField({
   );
 }
 
+
+type SalesBeatRow = {
+  beatId: string;
+  title: string;
+  catalogCode: string | null;
+  units: number;
+  revenue: number;
+  legacyUnits: number;
+};
+
+type SalesRecentOrder = {
+  id: string;
+  total: number;
+  currency: string;
+  customerEmail: string | null;
+  customerName: string | null;
+  createdAt: string;
+  beats: string[];
+};
+
+type SalesResponse = {
+  summary: {
+    grossSales: number;
+    completedOrders: number;
+    unitsSold: number;
+    averageOrder: number;
+    currency: string;
+  };
+  beats: SalesBeatRow[];
+  recentOrders: SalesRecentOrder[];
+  legacyMultiBeatOrders: number;
+};
+
+function formatSalesMoney(amount: number, currency = "USD") {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency || "USD"
+    }).format(amount);
+  } catch {
+    return `$${amount.toFixed(2)}`;
+  }
+}
+
 const initial: FormState = {
   title: "",
   producer: "YE2K",
@@ -312,6 +356,54 @@ export default function AdminPage() {
   const [activeSite, setActiveSite] = useState<Site | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [shareImageFile, setShareImageFile] = useState<File | null>(null);
+  const [salesData, setSalesData] = useState<SalesResponse | null>(null);
+  const [salesBusy, setSalesBusy] = useState(false);
+  const [salesMessage, setSalesMessage] = useState("");
+
+  async function loadSales(targetSite: Site | null = activeSite) {
+    if (!targetSite) {
+      setSalesData(null);
+      return;
+    }
+
+    setSalesBusy(true);
+    setSalesMessage("");
+
+    try {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Your admin session has expired.");
+      }
+
+      const response = await fetch(
+        `/api/admin/sales?site_id=${encodeURIComponent(targetSite.id)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          },
+          cache: "no-store"
+        }
+      );
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Could not load sales.");
+      }
+
+      setSalesData(payload as SalesResponse);
+    } catch (error) {
+      setSalesData(null);
+      setSalesMessage(
+        error instanceof Error ? error.message : "Could not load sales."
+      );
+    } finally {
+      setSalesBusy(false);
+    }
+  }
 
   async function refresh(targetSite: Site | null = activeSite) {
     if (!targetSite) return;
@@ -353,6 +445,8 @@ export default function AdminPage() {
         }
       });
     }
+
+    await loadSales(targetSite);
   }
 
   async function loadSites(preferredSiteId?: string) {
@@ -975,6 +1069,7 @@ export default function AdminPage() {
 
       <nav className="admin-section-nav" aria-label="Back office sections">
         <a href="#admin-storefronts">Storefronts</a>
+        <a href="#admin-sales">Sales</a>
         <a href="#admin-website">Website</a>
         <a href="#admin-upload">Upload</a>
         <a href="#admin-catalog">Catalog</a>
@@ -1042,6 +1137,171 @@ export default function AdminPage() {
             </a>
           )}
         </div>
+      </section>
+
+      <section
+        id="admin-sales"
+        className="admin-panel sales-panel admin-anchor-section"
+      >
+        <div className="settings-heading">
+          <div>
+            <p className="eyebrow">SALES</p>
+            <h2>{activeSite?.name || "Storefront"} sales</h2>
+          </div>
+          <div className="sales-heading-actions">
+            <p>Only Stripe-verified completed orders are counted.</p>
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() => loadSales()}
+              disabled={!activeSite || salesBusy}
+            >
+              {salesBusy ? "Refreshing…" : "Refresh sales"}
+            </button>
+          </div>
+        </div>
+
+        {salesMessage && <p className="form-message">{salesMessage}</p>}
+
+        {salesData && (
+          <>
+            <div className="sales-summary-grid">
+              <article>
+                <span>Gross sales</span>
+                <strong>
+                  {formatSalesMoney(
+                    salesData.summary.grossSales,
+                    salesData.summary.currency
+                  )}
+                </strong>
+              </article>
+              <article>
+                <span>Completed orders</span>
+                <strong>{salesData.summary.completedOrders}</strong>
+              </article>
+              <article>
+                <span>Beats sold</span>
+                <strong>{salesData.summary.unitsSold}</strong>
+              </article>
+              <article>
+                <span>Average order</span>
+                <strong>
+                  {formatSalesMoney(
+                    salesData.summary.averageOrder,
+                    salesData.summary.currency
+                  )}
+                </strong>
+              </article>
+            </div>
+
+            <div className="sales-grid">
+              <div className="sales-table-card">
+                <div className="sales-card-heading">
+                  <div>
+                    <p className="eyebrow">BY BEAT</p>
+                    <h3>Beat sales</h3>
+                  </div>
+                  <small>Revenue uses the price captured at checkout.</small>
+                </div>
+
+                {salesData.beats.length ? (
+                  <div className="sales-table-wrap">
+                    <table className="sales-table">
+                      <thead>
+                        <tr>
+                          <th>Beat</th>
+                          <th>Sold</th>
+                          <th>Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {salesData.beats.map((beat) => (
+                          <tr key={beat.beatId}>
+                            <td>
+                              <strong>{beat.title}</strong>
+                              <small>{beat.catalogCode || "—"}</small>
+                            </td>
+                            <td>
+                              {beat.units}
+                              {beat.legacyUnits > 0 && (
+                                <small>
+                                  {beat.legacyUnits} legacy
+                                </small>
+                              )}
+                            </td>
+                            <td>
+                              {formatSalesMoney(
+                                beat.revenue,
+                                salesData.summary.currency
+                              )}
+                              {beat.legacyUnits > 0 && (
+                                <small>Tracked revenue only</small>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="sales-empty">No completed beat sales yet.</p>
+                )}
+              </div>
+
+              <div className="sales-table-card">
+                <div className="sales-card-heading">
+                  <div>
+                    <p className="eyebrow">RECENT</p>
+                    <h3>Completed orders</h3>
+                  </div>
+                </div>
+
+                {salesData.recentOrders.length ? (
+                  <div className="sales-order-list">
+                    {salesData.recentOrders.map((order) => (
+                      <article key={order.id}>
+                        <div>
+                          <strong>
+                            {formatSalesMoney(order.total, order.currency)}
+                          </strong>
+                          <span>
+                            {new Date(order.createdAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit"
+                            })}
+                          </span>
+                        </div>
+                        <p>{order.beats.join(", ") || "Beat order"}</p>
+                        <small>
+                          {order.customerEmail || order.customerName || "Stripe customer"}
+                        </small>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="sales-empty">No completed orders yet.</p>
+                )}
+              </div>
+            </div>
+
+            {salesData.legacyMultiBeatOrders > 0 && (
+              <p className="sales-legacy-note">
+                {salesData.legacyMultiBeatOrders} older multi-beat order
+                {salesData.legacyMultiBeatOrders === 1 ? "" : "s"} existed before
+                exact per-beat price snapshots were added. Their order totals and
+                units sold are counted exactly, but their revenue is not guessed
+                into individual beats.
+              </p>
+            )}
+          </>
+        )}
+
+        {!salesData && !salesBusy && !salesMessage && (
+          <p className="sales-empty">Sales will appear after verified Stripe purchases.</p>
+        )}
       </section>
 
       <section id="admin-website" className="admin-panel homepage-settings-panel admin-anchor-section">
