@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     const { data: beats, error: beatsError } = await supabase
       .from("beats")
-      .select("id,title,price,status,mp3_path,wav_path,site_id,release_at")
+      .select("id,title,catalog_code,price,status,mp3_path,wav_path,site_id,release_at")
       .in("id", uniqueBeatIds)
       .eq("site_id", site.id)
       .eq("status", "published");
@@ -123,6 +123,37 @@ export async function POST(request: Request) {
       console.error("Could not create pending Stripe order:", pendingOrderError);
       return NextResponse.json(
         { error: "The order could not be prepared." },
+        { status: 500 }
+      );
+    }
+
+    const { error: orderItemsError } = await supabase
+      .from("order_items")
+      .insert(
+        beats.map((beat) => ({
+          order_id: internalOrderId,
+          site_id: site.id,
+          beat_id: beat.id,
+          beat_title: beat.title,
+          catalog_code: beat.catalog_code || null,
+          unit_price: Number(beat.price),
+          quantity: 1,
+          currency: currency.toUpperCase()
+        }))
+      );
+
+    if (orderItemsError) {
+      console.error("Could not snapshot Stripe order items:", orderItemsError);
+      await supabase
+        .from("orders")
+        .delete()
+        .eq("id", internalOrderId)
+        .eq("payment_status", "pending");
+
+      internalOrderId = null;
+
+      return NextResponse.json(
+        { error: "The order could not be prepared for sales tracking." },
         { status: 500 }
       );
     }
