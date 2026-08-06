@@ -3909,3 +3909,149 @@ html{scroll-behavior:smooth}
     text-align:left;
   }
 }
+
+/* Back office: real tab pages */
+.admin-anchor-section[hidden]{
+  display:none !important;
+}
+
+.admin-section-nav{
+  display:flex;
+  align-items:center;
+  gap:0;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+
+.admin-section-nav::-webkit-scrollbar{
+  display:none;
+}
+
+.admin-section-nav button{
+  appearance:none;
+  border:0;
+  border-bottom:2px solid transparent;
+  margin:0;
+  padding:14px 18px;
+  background:transparent;
+  color:var(--muted);
+  font:inherit;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  cursor:pointer;
+}
+
+.admin-section-nav button:hover,
+.admin-section-nav button.active{
+  color:var(--text);
+  border-bottom-color:var(--text);
+}
+
+.admin-grid-upload,
+.admin-grid-catalog{
+  grid-template-columns:minmax(0,1fr);
+}
+
+.admin-grid-upload .upload-panel,
+.admin-grid-catalog .catalog-panel{
+  width:100%;
+  max-width:none;
+}
+
+/* Sales stays simple: one vertical page with list-like sections */
+.sales-panel{
+  max-width:none;
+}
+
+.sales-panel .settings-heading{
+  align-items:flex-start;
+}
+
+.sales-list-view{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:18px;
+}
+
+.sales-list-view .sales-table-card{
+  width:100%;
+  min-width:0;
+}
+
+.sales-table-wrap{
+  overflow-x:auto;
+}
+
+.sales-table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.sales-table th,
+.sales-table td{
+  padding:14px 12px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  vertical-align:top;
+}
+
+.sales-table td small,
+.sales-table td strong{
+  display:block;
+}
+
+.sales-order-list{
+  display:flex;
+  flex-direction:column;
+}
+
+.sales-order-list article{
+  display:grid;
+  grid-template-columns:minmax(150px,.8fr) minmax(220px,1.4fr) minmax(180px,1fr);
+  gap:18px;
+  align-items:center;
+  padding:16px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.sales-order-list article > div{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.sales-order-list article p,
+.sales-order-list article small{
+  margin:0;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+@media(max-width:760px){
+  .admin-section-nav button{
+    padding:12px 14px;
+  }
+
+  .sales-summary-grid{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .sales-order-list article{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+
+  .sales-table th,
+  .sales-table td{
+    padding:12px 8px;
+  }
+}
+
+@media(max-width:480px){
+  .sales-summary-grid{
+    grid-template-columns:1fr;
+  }
+}
