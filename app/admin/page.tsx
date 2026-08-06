@@ -359,6 +359,7 @@ export default function AdminPage() {
   const [salesData, setSalesData] = useState<SalesResponse | null>(null);
   const [salesBusy, setSalesBusy] = useState(false);
   const [salesMessage, setSalesMessage] = useState("");
+  const [adminView, setAdminView] = useState<"storefronts" | "sales" | "website" | "upload" | "catalog">("storefronts");
 
   async function loadSales(targetSite: Site | null = activeSite) {
     if (!targetSite) {
@@ -1068,14 +1069,33 @@ export default function AdminPage() {
       </header>
 
       <nav className="admin-section-nav" aria-label="Back office sections">
-        <a href="#admin-storefronts">Storefronts</a>
-        <a href="#admin-sales">Sales</a>
-        <a href="#admin-website">Website</a>
-        <a href="#admin-upload">Upload</a>
-        <a href="#admin-catalog">Catalog</a>
+        {[
+          ["storefronts", "Storefronts"],
+          ["sales", "Sales"],
+          ["website", "Website"],
+          ["upload", "Upload"],
+          ["catalog", "Catalog"]
+        ].map(([view, label]) => (
+          <button
+            key={view}
+            type="button"
+            className={adminView === view ? "active" : ""}
+            onClick={() =>
+              setAdminView(
+                view as "storefronts" | "sales" | "website" | "upload" | "catalog"
+              )
+            }
+          >
+            {label}
+          </button>
+        ))}
       </nav>
 
-      <section id="admin-storefronts" className="admin-panel site-manager-panel admin-anchor-section">
+      <section
+        id="admin-storefronts"
+        className="admin-panel site-manager-panel admin-anchor-section"
+        hidden={adminView !== "storefronts"}
+      >
         <div className="settings-heading">
           <div>
             <p className="eyebrow">STOREFRONTS</p>
@@ -1142,6 +1162,7 @@ export default function AdminPage() {
       <section
         id="admin-sales"
         className="admin-panel sales-panel admin-anchor-section"
+        hidden={adminView !== "sales"}
       >
         <div className="settings-heading">
           <div>
@@ -1194,7 +1215,7 @@ export default function AdminPage() {
               </article>
             </div>
 
-            <div className="sales-grid">
+            <div className="sales-grid sales-list-view">
               <div className="sales-table-card">
                 <div className="sales-card-heading">
                   <div>
@@ -1304,7 +1325,11 @@ export default function AdminPage() {
         )}
       </section>
 
-      <section id="admin-website" className="admin-panel homepage-settings-panel admin-anchor-section">
+      <section
+        id="admin-website"
+        className="admin-panel homepage-settings-panel admin-anchor-section"
+        hidden={adminView !== "website"}
+      >
         <div className="settings-heading">
           <div>
             <p className="eyebrow">HOMEPAGE SETTINGS</p>
@@ -1951,8 +1976,12 @@ export default function AdminPage() {
         {settingsMessage && <p className="form-message">{settingsMessage}</p>}
       </section>
 
-      <div className="admin-grid">
-        <section id="admin-upload" className="admin-panel upload-panel admin-anchor-section">
+      <div className={`admin-grid admin-grid-${adminView}`}>
+        <section
+          id="admin-upload"
+          className="admin-panel upload-panel admin-anchor-section"
+          hidden={adminView !== "upload"}
+        >
           <p className="eyebrow">{editingBeat ? "EDIT RELEASE" : "NEW RELEASE"}</p>
           <h1>{editingBeat ? `Edit ${editingBeat.title}` : "Upload a beat"}</h1>
 
@@ -2113,7 +2142,11 @@ export default function AdminPage() {
           {message && <p className="form-message">{message}</p>}
         </section>
 
-        <aside id="admin-catalog" className="admin-panel catalog-panel admin-anchor-section">
+        <aside
+          id="admin-catalog"
+          className="admin-panel catalog-panel admin-anchor-section"
+          hidden={adminView !== "catalog"}
+        >
           <p className="eyebrow">CATALOG</p>
           <h2>{beats.length} beats</h2>
           <div className="admin-list">
