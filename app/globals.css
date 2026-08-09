@@ -4323,3 +4323,382 @@ html{scroll-behavior:smooth}
     flex-basis:42px !important;
   }
 }
+
+/* =========================================================
+   FINAL MOBILE PRODUCT CARD — approved compact layout
+   Mobile only. Desktop remains unchanged.
+   ========================================================= */
+.mobile-wave-duration{
+  display:none;
+}
+
+@media(max-width:620px){
+  html,
+  body{
+    width:100%;
+    max-width:100%;
+    overflow-x:clip !important;
+  }
+
+  body{
+    position:relative;
+  }
+
+  .site-shell{
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    overflow-x:clip !important;
+  }
+
+  .site-shell > *,
+  .samples-shell,
+  .sample-grid,
+  .sample-card,
+  .sample-card > *,
+  .catalog-toolbar,
+  .samples-header{
+    box-sizing:border-box;
+    min-width:0 !important;
+    max-width:100%;
+  }
+
+  .samples-shell{
+    width:100%;
+    padding-left:12px !important;
+    padding-right:12px !important;
+    overflow:hidden;
+  }
+
+  .sample-grid{
+    width:100%;
+    display:block !important;
+    overflow:visible;
+  }
+
+  .sample-card{
+    position:relative;
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:112px minmax(0,1fr) !important;
+    grid-template-rows:auto 1fr auto !important;
+    grid-template-areas:
+      "cover info"
+      "cover wave"
+      "footer footer" !important;
+    column-gap:14px !important;
+    row-gap:0 !important;
+    margin:0 0 12px !important;
+    padding:12px 12px 0 !important;
+    border:1px solid #d0d0d0 !important;
+    border-radius:8px !important;
+    background:#fff !important;
+    overflow:hidden !important;
+    box-shadow:none !important;
+  }
+
+  .sample-cover-wrap{
+    grid-area:cover !important;
+    position:relative !important;
+    width:112px !important;
+    height:112px !important;
+    min-width:112px !important;
+    max-width:112px !important;
+    margin:0 !important;
+    align-self:start !important;
+    border:0 !important;
+    border-radius:4px !important;
+    overflow:hidden !important;
+    background:#f4f4f4;
+  }
+
+  .sample-cover{
+    width:100% !important;
+    height:100% !important;
+    background-size:cover !important;
+    background-position:center !important;
+  }
+
+  .preview-label{
+    display:none !important;
+  }
+
+  .sample-play{
+    grid-area:cover !important;
+    position:relative !important;
+    z-index:6 !important;
+    align-self:center !important;
+    justify-self:center !important;
+    width:48px !important;
+    height:48px !important;
+    min-width:48px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:2px solid #fff !important;
+    border-radius:50% !important;
+    background:rgba(0,0,0,.74) !important;
+    color:#fff !important;
+    box-shadow:0 0 0 1px rgba(0,0,0,.24) !important;
+    font-size:16px !important;
+  }
+
+  .sample-card.is-active .sample-play{
+    background:#000 !important;
+    color:#fff !important;
+  }
+
+  .sample-runner-slot{
+    display:none !important;
+  }
+
+  .sample-info{
+    grid-area:info !important;
+    width:100% !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:2px 0 5px !important;
+    align-self:start !important;
+  }
+
+  .sample-info h3{
+    width:100%;
+    min-width:0;
+    margin:0 !important;
+    font-size:19px !important;
+    line-height:1.05 !important;
+    letter-spacing:-.02em;
+    white-space:normal !important;
+    overflow:visible !important;
+  }
+
+  .beat-title-link{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    gap:0 !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  .beat-title-link > span{
+    display:block;
+    width:100%;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    order:2;
+  }
+
+  .beat-title-link .catalog-code{
+    order:1;
+    display:block !important;
+    margin:0 0 6px !important;
+    color:#555 !important;
+    font-size:10px !important;
+    line-height:1 !important;
+    letter-spacing:.08em !important;
+  }
+
+  .sample-info > p{
+    margin:6px 0 0 !important;
+    color:#555 !important;
+    font-size:13px !important;
+    line-height:1.1 !important;
+  }
+
+  .sample-meta{
+    display:none !important;
+  }
+
+  .sample-waveform{
+    grid-area:wave !important;
+    position:relative !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:2px 0 20px !important;
+    align-self:end !important;
+    overflow:hidden !important;
+    border:0 !important;
+    background:transparent !important;
+  }
+
+  .sample-waveform .real-waveform{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+  }
+
+  .sample-waveform canvas,
+  .real-waveform.is-compact canvas{
+    display:block;
+    width:100% !important;
+    max-width:100% !important;
+    height:48px !important;
+  }
+
+  .waveform-position{
+    display:none !important;
+  }
+
+  .mobile-wave-duration{
+    display:block !important;
+    position:absolute;
+    left:0;
+    bottom:2px;
+    margin:0;
+    color:#666;
+    font-size:11px;
+    line-height:1;
+  }
+
+  .sample-footer{
+    grid-area:footer !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+    margin:12px 0 0 !important;
+    padding:13px 0 14px !important;
+    border-top:1px solid #d0d0d0 !important;
+    background:#fff !important;
+  }
+
+  .sample-footer > strong{
+    display:block !important;
+    margin:0 !important;
+    padding:0 !important;
+    color:#000 !important;
+    font-size:22px !important;
+    line-height:1 !important;
+    letter-spacing:-.02em;
+  }
+
+  .sample-actions{
+    width:100% !important;
+    min-width:0 !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1.18fr) minmax(0,1fr) 48px !important;
+    gap:8px !important;
+    align-items:stretch !important;
+  }
+
+  .sample-actions .buy-now-btn,
+  .sample-actions .card-add-btn{
+    width:100% !important;
+    min-width:0 !important;
+    height:48px !important;
+    min-height:48px !important;
+    margin:0 !important;
+    padding:0 10px !important;
+    border-radius:0 !important;
+    font-size:11px !important;
+    font-weight:900 !important;
+    letter-spacing:.03em !important;
+    text-transform:uppercase !important;
+  }
+
+  .sample-actions .buy-now-btn{
+    border:1px solid #000 !important;
+    background:#000 !important;
+    color:#fff !important;
+  }
+
+  .sample-actions .card-add-btn{
+    border:1px solid #000 !important;
+    background:#fff !important;
+    color:#000 !important;
+  }
+
+  .sample-actions .workspace-open-btn{
+    width:48px !important;
+    height:48px !important;
+    min-width:48px !important;
+    max-width:48px !important;
+    min-height:48px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:1px solid #000 !important;
+    border-radius:7px !important;
+    background:#000 !important;
+    color:#fff !important;
+  }
+
+  .sample-actions .workspace-notepad-icon{
+    width:21px !important;
+    height:21px !important;
+  }
+
+  /* Contain other storefront pieces that can otherwise widen Safari. */
+  .hero,
+  .hero-world,
+  .interactive-world,
+  .interactive-world canvas,
+  .catalog-toolbar,
+  .catalog-tabs,
+  .catalog-search,
+  .samples-tools,
+  .email-signup,
+  footer{
+    width:auto;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  .interactive-world,
+  .sample-waveform,
+  .real-waveform{
+    contain:layout paint;
+  }
+}
+
+@media(max-width:390px){
+  .samples-shell{
+    padding-left:10px !important;
+    padding-right:10px !important;
+  }
+
+  .sample-card{
+    grid-template-columns:96px minmax(0,1fr) !important;
+    column-gap:11px !important;
+    padding:10px 10px 0 !important;
+  }
+
+  .sample-cover-wrap{
+    width:96px !important;
+    height:96px !important;
+    min-width:96px !important;
+    max-width:96px !important;
+  }
+
+  .sample-play{
+    width:43px !important;
+    height:43px !important;
+    min-width:43px !important;
+  }
+
+  .sample-info h3{
+    font-size:17px !important;
+  }
+
+  .sample-waveform canvas,
+  .real-waveform.is-compact canvas{
+    height:40px !important;
+  }
+
+  .sample-actions{
+    grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr) 42px !important;
+    gap:6px !important;
+  }
+
+  .sample-actions .workspace-open-btn{
+    width:42px !important;
+    min-width:42px !important;
+    max-width:42px !important;
+  }
+}
