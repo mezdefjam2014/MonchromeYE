@@ -4702,3 +4702,313 @@ html{scroll-behavior:smooth}
     max-width:42px !important;
   }
 }
+
+/* =========================================================
+   Exact mobile beat-card composition
+   Dedicated markup below 620px; desktop cards are untouched.
+   ========================================================= */
+.mobile-beat-card{
+  display:none;
+}
+
+@media(max-width:620px){
+  html,
+  body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+
+  body,
+  .site-shell,
+  .samples-shell,
+  .sample-grid,
+  main{
+    min-width:0;
+    max-width:100%;
+  }
+
+  .site-shell{
+    width:100%;
+    overflow-x:clip;
+  }
+
+  .sample-grid{
+    display:block !important;
+    width:100%;
+  }
+
+  .desktop-beat-card{
+    display:none !important;
+  }
+
+  .mobile-beat-card{
+    display:block;
+    width:100%;
+    max-width:100%;
+    margin:0 0 12px;
+    padding:12px;
+    overflow:hidden;
+    border:1px solid #d4d4d4;
+    border-radius:10px;
+    background:#fff;
+    color:#000;
+    box-shadow:none;
+  }
+
+  .mobile-beat-main{
+    display:grid;
+    grid-template-columns:clamp(108px,31vw,132px) minmax(0,1fr);
+    gap:14px;
+    align-items:stretch;
+    min-width:0;
+  }
+
+  .mobile-beat-cover-button{
+    position:relative;
+    display:block;
+    width:100%;
+    aspect-ratio:1/1;
+    min-width:0;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+    border:1px solid #111;
+    border-radius:4px;
+    background:#0a0a0a;
+    cursor:pointer;
+  }
+
+  .mobile-beat-cover{
+    position:absolute;
+    inset:0;
+    display:block;
+    background:#111 center/cover no-repeat;
+  }
+
+  .mobile-beat-play-icon{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:50px;
+    height:50px;
+    transform:translate(-50%,-50%);
+    display:grid;
+    place-items:center;
+    border:2px solid #fff;
+    border-radius:50%;
+    background:rgba(0,0,0,.48);
+    color:#fff;
+    font-size:18px;
+    font-weight:900;
+    line-height:1;
+    box-shadow:0 1px 3px rgba(0,0,0,.22);
+  }
+
+  .mobile-beat-content{
+    display:grid;
+    grid-template-rows:auto 1fr;
+    min-width:0;
+    overflow:hidden;
+  }
+
+  .mobile-beat-copy{
+    min-width:0;
+    padding:2px 0 5px;
+  }
+
+  .mobile-beat-code{
+    display:block;
+    margin:0 0 5px;
+    color:#565656;
+    font-size:11px;
+    font-weight:700;
+    line-height:1;
+    letter-spacing:.04em;
+  }
+
+  .mobile-beat-copy h3{
+    max-width:100%;
+    margin:0 0 5px;
+    color:#000;
+    font-size:clamp(17px,5vw,22px);
+    font-weight:900;
+    line-height:1.05;
+    letter-spacing:-.025em;
+    overflow-wrap:anywhere;
+  }
+
+  .mobile-beat-copy h3 a{
+    color:#000;
+  }
+
+  .mobile-beat-copy p{
+    margin:0;
+    color:#626262;
+    font-size:13px;
+    font-weight:500;
+    line-height:1.2;
+  }
+
+  .mobile-beat-waveform{
+    display:grid;
+    grid-template-rows:minmax(42px,1fr) auto;
+    align-self:end;
+    min-width:0;
+    max-width:100%;
+    overflow:hidden;
+  }
+
+  .mobile-beat-waveform .real-waveform,
+  .mobile-beat-waveform .real-waveform canvas{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+  }
+
+  .mobile-beat-waveform .real-waveform{
+    overflow:hidden;
+  }
+
+  .mobile-beat-waveform .real-waveform canvas{
+    height:54px !important;
+  }
+
+  .mobile-beat-waveform>span{
+    display:block;
+    margin-top:2px;
+    color:#696969;
+    font-size:12px;
+    line-height:1;
+  }
+
+  .mobile-beat-footer{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid #d4d4d4;
+  }
+
+  .mobile-beat-footer>strong{
+    display:block;
+    margin:0 0 12px;
+    color:#000;
+    font-size:23px;
+    font-weight:900;
+    line-height:1;
+    letter-spacing:-.025em;
+  }
+
+  .mobile-beat-actions{
+    display:grid;
+    grid-template-columns:minmax(0,1.12fr) minmax(0,1fr) auto;
+    gap:8px;
+    width:100%;
+    min-width:0;
+    align-items:stretch;
+  }
+
+  .mobile-buy-btn,
+  .mobile-add-btn,
+  .mobile-workspace-btn{
+    min-width:0;
+    height:50px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:900;
+    line-height:1;
+    text-transform:uppercase;
+    cursor:pointer;
+  }
+
+  .mobile-buy-btn{
+    border:1px solid #000;
+    background:#000;
+    color:#fff;
+  }
+
+  .mobile-add-btn{
+    border:1px solid #000;
+    background:#fff;
+    color:#000;
+  }
+
+  .mobile-add-btn.added{
+    background:#efefef;
+  }
+
+  .mobile-workspace-btn{
+    display:grid;
+    place-items:center;
+    width:50px;
+    min-width:50px;
+    padding:0;
+    border:1px solid #000;
+    background:#000;
+    color:#fff;
+  }
+
+  .mobile-workspace-btn svg{
+    width:22px;
+    height:22px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.8;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+
+  /* Prevent the other mobile storefront areas from creating horizontal drift. */
+  .interactive-world,
+  .interactive-world canvas,
+  .catalog-toolbar,
+  .catalog-tabs,
+  .catalog-search,
+  .samples-header,
+  .samples-tools,
+  .email-signup,
+  footer{
+    min-width:0;
+    max-width:100%;
+  }
+}
+
+@media(max-width:390px){
+  .mobile-beat-card{
+    padding:10px;
+  }
+
+  .mobile-beat-main{
+    grid-template-columns:100px minmax(0,1fr);
+    gap:11px;
+  }
+
+  .mobile-beat-play-icon{
+    width:44px;
+    height:44px;
+    font-size:16px;
+  }
+
+  .mobile-beat-copy h3{
+    font-size:17px;
+  }
+
+  .mobile-beat-waveform .real-waveform canvas{
+    height:46px !important;
+  }
+
+  .mobile-beat-actions{
+    grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr) auto;
+    gap:6px;
+  }
+
+  .mobile-buy-btn,
+  .mobile-add-btn,
+  .mobile-workspace-btn{
+    height:46px;
+  }
+
+  .mobile-workspace-btn{
+    width:46px;
+    min-width:46px;
+  }
+}
