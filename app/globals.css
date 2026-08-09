@@ -4055,3 +4055,271 @@ html{scroll-behavior:smooth}
     grid-template-columns:1fr;
   }
 }
+
+/* =========================================================
+   MOBILE STOREFRONT BEAT CARDS
+   Desktop/tablet styling above 620px is intentionally untouched.
+   ========================================================= */
+@media(max-width:620px){
+  html,
+  body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+
+  body,
+  .site-shell,
+  main,
+  .samples-shell,
+  .sample-grid,
+  .sample-card{
+    max-width:100%;
+    min-width:0;
+  }
+
+  .site-shell{
+    width:100%;
+    overflow-x:clip;
+  }
+
+  .sample-grid{
+    width:100%;
+    overflow:visible;
+  }
+
+  .sample-card{
+    width:100%;
+    box-sizing:border-box;
+    display:grid;
+    grid-template-columns:112px minmax(0,1fr) !important;
+    grid-template-rows:auto auto auto;
+    grid-template-areas:
+      "cover info"
+      "cover wave"
+      "footer footer" !important;
+    column-gap:14px;
+    row-gap:0;
+    padding:14px 0 0;
+    overflow:hidden;
+    border-bottom:1px solid #bdbdbd;
+    background:#fff;
+  }
+
+  /* Artwork becomes the play target visually. */
+  .sample-cover-wrap{
+    grid-area:cover !important;
+    position:relative;
+    width:112px;
+    min-width:112px;
+    height:112px;
+    margin:0;
+    align-self:start;
+    overflow:hidden;
+    border:1px solid #000;
+    background:#f5f5f5;
+  }
+
+  .sample-cover{
+    width:100%;
+    height:100%;
+    background-position:center;
+    background-size:cover;
+  }
+
+  .sample-play{
+    grid-area:cover !important;
+    position:relative;
+    z-index:5;
+    align-self:center;
+    justify-self:center;
+    width:48px;
+    height:48px;
+    margin:0;
+    border:2px solid #fff;
+    border-radius:50%;
+    background:rgba(0,0,0,.72);
+    color:#fff;
+    box-shadow:0 0 0 1px rgba(0,0,0,.2);
+  }
+
+  .sample-card.is-active .sample-play{
+    background:#000;
+    color:#fff;
+  }
+
+  .sample-info{
+    grid-area:info !important;
+    min-width:0;
+    padding:0 10px 8px 0;
+    align-self:start;
+  }
+
+  .sample-info h3{
+    margin:0 0 5px;
+    overflow:visible;
+    white-space:normal;
+    text-overflow:clip;
+    font-size:18px;
+    line-height:1.05;
+  }
+
+  .beat-title-link{
+    min-width:0;
+  }
+
+  .catalog-code{
+    margin-bottom:6px;
+    font-size:10px;
+  }
+
+  .sample-info p{
+    font-size:12px;
+  }
+
+  .sample-meta{
+    margin-top:6px;
+    font-size:11px;
+  }
+
+  /* Waveform stays beside the artwork, never wider than its grid cell. */
+  .sample-waveform{
+    grid-area:wave !important;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    align-self:end;
+    overflow:hidden;
+    padding:4px 10px 4px 0;
+    border:0;
+  }
+
+  .sample-waveform .real-waveform,
+  .sample-waveform canvas{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+  }
+
+  .real-waveform.is-compact canvas{
+    height:48px;
+  }
+
+  .waveform-position{
+    display:none;
+  }
+
+  /* The runner remains a desktop/tablet detail so the compact mobile
+     composition stays identical from row to row. */
+  .sample-runner-slot{
+    display:none !important;
+  }
+
+  /* Price on its own line; actions directly below it. */
+  .sample-footer{
+    grid-area:footer !important;
+    width:100%;
+    min-width:0 !important;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    margin-top:14px;
+    padding:12px 0 14px;
+    border-top:1px solid #d7d7d7;
+  }
+
+  .sample-footer>strong{
+    min-width:0;
+    margin:0;
+    color:#000;
+    font-size:22px;
+    line-height:1;
+  }
+
+  .sample-actions{
+    width:100%;
+    min-width:0;
+    display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) 46px;
+    gap:8px;
+    align-items:stretch;
+  }
+
+  .buy-now-btn,
+  .card-add-btn{
+    width:100%;
+    min-width:0;
+    min-height:48px;
+    padding:0 8px;
+    border-radius:0;
+    font-size:10px;
+    font-weight:900;
+    text-transform:uppercase;
+  }
+
+  .workspace-open-btn{
+    width:46px !important;
+    height:48px !important;
+    min-width:46px !important;
+    min-height:48px !important;
+    flex-basis:46px !important;
+    border-radius:6px !important;
+    align-self:stretch;
+  }
+
+  .workspace-open-btn .workspace-notepad-icon{
+    width:20px !important;
+    height:20px !important;
+  }
+
+  /* Prevent other mobile storefront elements from creating horizontal drift. */
+  .interactive-world,
+  .interactive-world canvas,
+  .catalog-toolbar,
+  .catalog-tabs,
+  .catalog-search,
+  .samples-header,
+  .samples-tools,
+  .email-signup,
+  footer{
+    max-width:100%;
+    min-width:0;
+  }
+}
+
+@media(max-width:390px){
+  .sample-card{
+    grid-template-columns:96px minmax(0,1fr) !important;
+    column-gap:11px;
+  }
+
+  .sample-cover-wrap{
+    width:96px;
+    min-width:96px;
+    height:96px;
+  }
+
+  .sample-play{
+    width:44px;
+    height:44px;
+  }
+
+  .sample-info h3{
+    font-size:16px;
+  }
+
+  .real-waveform.is-compact canvas{
+    height:42px;
+  }
+
+  .sample-actions{
+    grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr) 42px;
+    gap:6px;
+  }
+
+  .workspace-open-btn{
+    width:42px !important;
+    min-width:42px !important;
+    flex-basis:42px !important;
+  }
+}
