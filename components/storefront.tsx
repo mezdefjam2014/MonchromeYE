@@ -1696,6 +1696,9 @@ export default function Storefront({
                           {formatTime(currentTime)}
                         </span>
                       )}
+                      <span className="mobile-wave-duration">
+                        {formatTime(rowDuration)}
+                      </span>
                     </div>
 
                     <div className="sample-footer">
