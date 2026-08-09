@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -1623,11 +1624,113 @@ export default function Storefront({
                 const rowCurrentTime = isActive ? currentTime : 0;
 
                 return (
+                  <Fragment key={beat.id}>
                   <article
-                    className={`sample-card ${
+                    className={`mobile-beat-card ${
                       isActive ? "is-active" : ""
                     }`}
-                    key={beat.id}
+                    key={`${beat.id}-mobile`}
+                  >
+                    <div className="mobile-beat-main">
+                      <button
+                        type="button"
+                        className="mobile-beat-cover-button"
+                        onClick={() => playBeat(beat)}
+                        aria-label={`${
+                          isActive && playing ? "Pause" : "Play"
+                        } ${beat.title}`}
+                      >
+                        <span
+                          className="mobile-beat-cover"
+                          style={
+                            cover
+                              ? { backgroundImage: `url(${cover})` }
+                              : undefined
+                          }
+                        />
+                        <span className="mobile-beat-play-icon" aria-hidden="true">
+                          {isActive && playing ? "Ⅱ" : "▶"}
+                        </span>
+                      </button>
+
+                      <div className="mobile-beat-content">
+                        <div className="mobile-beat-copy">
+                          {beat.catalog_code && (
+                            <Link
+                              className="mobile-beat-code"
+                              href={beatHref(beat)}
+                              aria-label={`Open ${beat.title}`}
+                            >
+                              {beat.catalog_code}
+                            </Link>
+                          )}
+                          <h3>
+                            <Link href={beatHref(beat)}>{beat.title}</Link>
+                          </h3>
+                          <p>{beat.producer}</p>
+                        </div>
+
+                        <div className="mobile-beat-waveform">
+                          <WaveformCanvas
+                            src={previewUrl}
+                            currentTime={rowCurrentTime}
+                            duration={rowDuration}
+                            playing={isActive && playing}
+                            compact
+                            onDuration={(seconds) =>
+                              rememberDuration(beat.id, seconds)
+                            }
+                            onSeek={(seconds) => seekBeat(beat, seconds)}
+                          />
+                          <span>{formatTime(rowDuration)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mobile-beat-footer">
+                      <strong>${Number(beat.price).toFixed(2)}</strong>
+                      <div className="mobile-beat-actions">
+                        <button
+                          className="mobile-buy-btn"
+                          onClick={() => buyNow(beat)}
+                        >
+                          Buy now
+                        </button>
+                        <button
+                          className={`mobile-add-btn ${
+                            has(beat.id) ? "added" : ""
+                          }`}
+                          onClick={() => toggleCartItem(beat)}
+                        >
+                          {has(beat.id) ? "Added" : "Add"}
+                        </button>
+                        {workspaceEnabled && (
+                          <button
+                            type="button"
+                            className="mobile-workspace-btn"
+                            onClick={() => setWorkspaceBeat(beat)}
+                            aria-label={`Open writing workspace for ${beat.title}`}
+                            title="Open writing workspace"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                              focusable="false"
+                            >
+                              <rect x="6" y="3.5" width="14" height="17" rx="2" />
+                              <path d="M9.5 8h7M9.5 12h7M9.5 16h5" />
+                              <path d="M6 7H3.5M6 11H3.5M6 15H3.5" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                  <article
+                    className={`sample-card desktop-beat-card ${
+                      isActive ? "is-active" : ""
+                    }`}
+                    key={`${beat.id}-desktop`}
                   >
                     <div className="sample-cover-wrap">
                       <div
@@ -1744,6 +1847,7 @@ export default function Storefront({
                       </div>
                     </div>
                   </article>
+                  </Fragment>
                 );
               })}
             </div>
